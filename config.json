@@ -1,5 +1,5 @@
 {
-  "displayTZ": "Asia/Hong_Kong",
+  "displayTZ": "Europe/Berlin",
   "thresholdHours": 24,
   "maxEventsPerDay": 3,
   "isDisplayToScreen": false,
@@ -12,7 +12,7 @@
   "imageWidth": 984,
   "imageHeight": 1304,
   "rotateAngle": 270,
-  "is24h": false,
+  "is24h": true,
   "calendars": [
     "primary"
   ]

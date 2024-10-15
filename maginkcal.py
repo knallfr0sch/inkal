@@ -53,7 +53,7 @@ def main():
         # For this implementation, each week starts on a Sunday and the calendar begins on the nearest elapsed Sunday
         # The calendar will also display 5 weeks of events to cover the upcoming month, ending on a Saturday
         powerService = PowerHelper()
-        powerService.sync_time()
+        #powerService.sync_time()
         currBatteryLevel = powerService.get_battery()
         logger.info('Battery level at start: {:.3f}'.format(currBatteryLevel))
 
@@ -68,6 +68,7 @@ def main():
         # Using Google Calendar to retrieve all events within start and end date (inclusive)
         start = dt.datetime.now()
         gcalService = GcalHelper()
+        gcalService.list_calendars()
         eventList = gcalService.retrieve_events(calendars, calStartDatetime, calEndDatetime, displayTZ, thresholdHours)
         logger.info("Calendar events retrieved in " + str(dt.datetime.now() - start))
 
