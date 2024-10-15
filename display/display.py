@@ -9,9 +9,9 @@ from PIL import Image
 import logging
 
 
-class DisplayHelper:
+class EInkDisplay:
 
-    def __init__(self, width, height):
+    def __init__(self, width: int, height: int) -> None:
         # Initialise the display
         self.logger = logging.getLogger('maginkcal')
         self.screenwidth = width
@@ -19,11 +19,11 @@ class DisplayHelper:
         self.epd = eink.EPD()
         self.epd.Init()
 
-    def update(self, blackimg, redimg):
+    def update(self, black_image: Image.Image, red_image: Image.Image):
         # Updates the display with the grayscale and red images
         # start displaying on eink display
         # self.epd.clear()
-        self.epd.display(blackimg, redimg)
+        self.epd.display(black_image, red_image)
         self.logger.info('E-Ink display update complete.')
 
     def calibrate(self, cycles=1):

@@ -14,7 +14,7 @@ from config import Config
 from gcal.google_calendar import GoogleCalendar
 from power.pi_sugar import PiSugar
 from pytz import timezone
-from render_data import RenderData
+from display_data import DisplayData
 from render.render import ChromeRenderer
 from typing import List
 from typings_google_calendar_api.events import Event
@@ -116,7 +116,7 @@ def main():
         )
         logger.info("Calendar events retrieved in " + str(dt.datetime.now() - start))
 
-        render_data: RenderData = {
+        render_data: DisplayData = {
             "batteryDisplayMode": batteryDisplayMode,
             "batteryLevel": battery_level,
             "calStartDate": calStartDate,
@@ -130,17 +130,17 @@ def main():
         } 
 
         renderer = ChromeRenderer(imageWidth, imageHeight, rotateAngle)
-        calBlackImage, calRedImage = renderer.render(render_data, events)
+        black_image, red_image = renderer.render(render_data, events)
 
         if isDisplayToScreen:
-            from display.display import DisplayHelper
+            from display.display import EInkDisplay
 
-            displayService = DisplayHelper(screenWidth, screenHeight)
+            eInkDisplay = EInkDisplay(screenWidth, screenHeight)
             if currDate.weekday() == weekStartDay:
                 # calibrate display once a week to prevent ghosting
-                displayService.calibrate(cycles=0)  # to calibrate in production
-            displayService.update(calBlackImage, calRedImage)
-            displayService.sleep()
+                eInkDisplay.calibrate(cycles=0)  # to calibrate in production
+            eInkDisplay.update(black_image, red_image)
+            eInkDisplay.sleep()
 
         battery_level = pi_sugar.get_battery()
         logger.info("Battery level at end: {:.3f}".format(battery_level))

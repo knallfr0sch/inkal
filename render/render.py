@@ -11,6 +11,7 @@ calendar and refreshing of the eInk display. In the future, I might choose to ge
 RPi device, while using a ESP32 or PiZero purely to just retrieve the image from a file host and update the screen.
 """
 
+import pickle
 import PIL
 from datetime import timedelta
 from PIL.Image import Image
@@ -28,7 +29,7 @@ import pathlib
 import calendar
 
 
-from render_data import RenderData
+from display_data import DisplayData
 
 BatteryText = Literal[
     'batteryHide',
@@ -44,7 +45,6 @@ class ChromeRenderer:
     def __init__(self, width: int, height: int, angle: int):
         self.logger = logging.getLogger('maginkcal')
         self.currPath = str(pathlib.Path(__file__).parent.absolute())
-        self.htmlFile = 'file://' + self.currPath + '/calendar.html'
         self.imageWidth = width
         self.imageHeight = height
         self.rotateAngle = angle
@@ -67,7 +67,7 @@ class ChromeRenderer:
             width=target_width,
             height=target_height)
 
-    def get_black_red_images(self) -> Tuple[Image, Image]:
+    def get_black_red_images(self, htmlFile: str) -> Tuple[Image, Image]:
         """This function captures a screenshot of the calendar,
         processes the image to extract the grayscale and red"""
 
@@ -78,7 +78,7 @@ class ChromeRenderer:
         opts.add_argument('--force-device-scale-factor=1')
         driver = webdriver.Chrome(options=opts)
         self.set_viewport_size(driver=driver)
-        driver.get(self.htmlFile)
+        driver.get(htmlFile)
         sleep(1)
         driver.get_screenshot_as_file(self.currPath + '/calendar.png')
         driver.quit()
@@ -134,11 +134,11 @@ class ChromeRenderer:
                 datetime_str = '{}{}am'.format(str(datetimeObj.hour), datetime_str)
         return datetime_str
     
-    def render(self, data: RenderData, events: List[Event]):
+    def render(self, data: DisplayData, events: List[Event], file_path: str = None) -> Tuple[Image, Image]:
         # first setup list to represent the 5 weeks in our calendar
-        calList = []
+        cal_list = []
         for i in range(35):
-            calList.append([])
+            cal_list.append([])
 
         # retrieve calendar configuration
         maxEventsPerDay = data['maxEventsPerDay']
@@ -150,11 +150,11 @@ class ChromeRenderer:
         for event in events:
             idx = self.get_day_in_cal(data['calStartDate'], event['startDatetime'].date())
             if idx >= 0:
-                calList[idx].append(event)
+                cal_list[idx].append(event)
             if event['isMultiday']:
                 idx = self.get_day_in_cal(data['calStartDate'], event['endDatetime'].date())
-                if idx < len(calList):
-                    calList[idx].append(event)
+                if idx < len(cal_list):
+                    cal_list[idx].append(event)
 
         # Read html template
         with open(self.currPath + '/calendar_template.html', 'r') as file:
@@ -173,7 +173,7 @@ class ChromeRenderer:
 
         # Populate the date and events
         cal_events_text: str = ''
-        for i in range(len(calList)):
+        for i in range(len(cal_list)):
             currDate: dt.datetime = data['calStartDate'] + timedelta(days=i)
             dayOfMonth: int = currDate.day
             if currDate == data['today']:
@@ -183,8 +183,8 @@ class ChromeRenderer:
             else:
                 cal_events_text += '<li><div class="date">' + str(dayOfMonth) + '</div>\n'
 
-            for j in range(min(len(calList[i]), maxEventsPerDay)):
-                event = calList[i][j]
+            for j in range(min(len(cal_list[i]), maxEventsPerDay)):
+                event = cal_list[i][j]
                 cal_events_text += '<div class="event'
                 if event['isUpdated']:
                     cal_events_text += ' text-danger'
@@ -202,22 +202,26 @@ class ChromeRenderer:
                     cal_events_text += '">' + self.get_short_time(event['startDatetime'], is24hour) + ' ' + event[
                         'summary']
                 cal_events_text += '</div>\n'
-            if len(calList[i]) > maxEventsPerDay:
-                cal_events_text += '<div class="event text-muted">' + str(len(calList[i]) - maxEventsPerDay) + ' more'
+            if len(cal_list[i]) > maxEventsPerDay:
+                cal_events_text += '<div class="event text-muted">' + str(len(cal_list[i]) - maxEventsPerDay) + ' more'
 
             cal_events_text += '</li>\n'
 
         # Append the bottom and write the file
+        if (file_path is None):
+            file_path: str = self.currPath + '/calendar.html'
+            
         htmlFile = open(self.currPath + '/calendar.html', "w")
         htmlFile.write(calendar_template.format(month=month_name, battText=battery_text, dayOfWeek=cal_days_of_week,
                                                 events=cal_events_text))
         htmlFile.close()
+        htmlFileUri = 'file://' + self.currPath + '/calendar.html'
 
-        calBlackImage, calRedImage = self.get_black_red_images()
+        black_image, red_image = self.get_black_red_images(htmlFileUri)
 
-        return calBlackImage, calRedImage
+        return black_image, red_image
     
-    def get_battery_text(self, data: RenderData) -> BatteryText:
+    def get_battery_text(self, data: DisplayData) -> BatteryText:
         displayMode = data['batteryDisplayMode']
 
         # Insert battery icon

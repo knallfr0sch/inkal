@@ -7,7 +7,9 @@ to trigger the syncing of the PiSugar
 
 import subprocess
 import logging
+import socket
 
+pi_sugar_tcp_port = 8423
 
 class PiSugar:
     """
@@ -39,10 +41,9 @@ class PiSugar:
         """
         
         try:
-            ps = subprocess.Popen(("echo", "rtc_rtc2pi"), stdout=subprocess.PIPE)
-            result = subprocess.check_output(
-                ("nc", "-q", "0", "127.0.0.1", "8423"), stdin=ps.stdout
-            )
-            ps.wait()
-        except subprocess.CalledProcessError:
-            self.logger.info("Invalid time sync command")
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.connect(("127.0.0.1", pi_sugar_tcp_port))
+                sock.sendall(b"rtc_rtc2pi")
+                sock.recv(1024)  # Buffer size of 1024 bytes
+        except socket.error as e:
+            self.logger.info(f"Socket error: {e}")

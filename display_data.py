@@ -2,7 +2,7 @@ from typing import List, Literal, TypedDict
 from datetime import datetime
 
 
-class RenderData(TypedDict):
+class DisplayData(TypedDict):
     """
     Data to be rendered on the E-Ink display.
     """
