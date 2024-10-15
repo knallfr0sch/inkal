@@ -51,6 +51,7 @@ class RenderHelper:
 
     def get_screenshot(self):
         opts = Options()
+        opts.binary_location = '/usr/bin/chromium-browser'
         opts.add_argument("--headless")
         opts.add_argument("--hide-scrollbars");
         opts.add_argument('--force-device-scale-factor=1')

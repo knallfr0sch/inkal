@@ -1,11 +1,11 @@
 {
   "displayTZ": "Europe/Berlin",
   "thresholdHours": 24,
-  "maxEventsPerDay": 3,
+  "maxEventsPerDay": 7,
   "isDisplayToScreen": false,
   "isShutdownOnComplete": false,
-  "batteryDisplayMode": 1,
-  "weekStartDay": 6,
+  "batteryDisplayMode": 0,
+  "weekStartDay": 0,
   "dayOfWeekText": ["M", "T", "W", "T", "F", "S", "S"],
   "screenWidth": 1304,
   "screenHeight": 984,
@@ -14,6 +14,9 @@
   "rotateAngle": 270,
   "is24h": true,
   "calendars": [
-    "primary"
+    "primary",
+    "tanni.sandner@gmail.com",
+    "teamsandner@gmail.com",
+    "sebastian.witthus@gmail.com"
   ]
 }

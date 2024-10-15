@@ -8,15 +8,16 @@ to trigger the syncing of the PiSugar
 import subprocess
 import logging
 
+
 class PowerHelper:
 
     def __init__(self):
-        self.logger = logging.getLogger('maginkcal')
+        self.logger = logging.getLogger("maginkcal")
 
-    def get_battery(self):
+    def get_battery(self) -> float:
         # start displaying on eink display
         # command = ['echo "get battery" | nc -q 0 127.0.0.1 8423']
-        battery_float = -1
+        battery_float = float(-1)
         try:
             # ps = subprocess.Popen(('echo', 'get battery'), stdout=subprocess.PIPE)
             # result = subprocess.check_output(('nc', '-q', '0', '127.0.0.1', '8423'), stdin=ps.stdout)
@@ -24,21 +25,25 @@ class PowerHelper:
             # result_str = result.decode('utf-8').rstrip()
             # battery_level = result_str.split()[-1]
             battery_float = float(0.3)
-            #battery_level = "{:.3f}".format(battery_float)
+            # battery_level = "{:.3f}".format(battery_float)
         except (ValueError, subprocess.CalledProcessError) as e:
-            self.logger.info('Invalid battery output')
+            self.logger.info("Invalid battery output")
         return battery_float
 
-    def set_next_boot_datetime(self, datetime):
+    def set_next_boot_datetime(self, datetime) -> bool:
         # TODO: For directly scheduling next boot instead of using PiSugar's web interface
         # Currently, it can be done manually through the PiSugar web interface
         return True
 
-    def sync_time(self):
-        # To sync PiSugar RTC with current time
+    def sync_time(self) -> None:
+        """
+        Synchronise with PiSugar time
+        """
         try:
-            ps = subprocess.Popen(('echo', 'rtc_rtc2pi'), stdout=subprocess.PIPE)
-            result = subprocess.check_output(('nc', '-q', '0', '127.0.0.1', '8423'), stdin=ps.stdout)
+            ps = subprocess.Popen(("echo", "rtc_rtc2pi"), stdout=subprocess.PIPE)
+            result = subprocess.check_output(
+                ("nc", "-q", "0", "127.0.0.1", "8423"), stdin=ps.stdout
+            )
             ps.wait()
         except subprocess.CalledProcessError:
-            self.logger.info('Invalid time sync command')
+            self.logger.info("Invalid time sync command")

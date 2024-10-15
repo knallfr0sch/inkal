@@ -10,26 +10,30 @@ import datetime as dt
 import pickle
 import os.path
 import pathlib
+from typing import List
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from typings_google_calendar_api.events import Event
+from typings_google_calendar_api.calendars import Calendar
 import logging
+from pytz.tzinfo import DstTzInfo, StaticTzInfo
 
 
 class GcalHelper:
 
     def __init__(self):
-        self.logger = logging.getLogger('maginkcal')
+        self.logger = logging.getLogger("maginkcal")
         # Initialise the Google Calendar using the provided credentials and token
-        SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+        SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
         self.currPath = str(pathlib.Path(__file__).parent.absolute())
 
         creds = None
         # The file token.pickle stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
         # time.
-        if os.path.exists(self.currPath + '/token.pickle'):
-            with open(self.currPath + '/token.pickle', 'rb') as token:
+        if os.path.exists(self.currPath + "/token.pickle"):
+            with open(self.currPath + "/token.pickle", "rb") as token:
                 creds = pickle.load(token)
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
@@ -37,101 +41,144 @@ class GcalHelper:
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    self.currPath + '/credentials.json', SCOPES)
+                    self.currPath + "/credentials.json", SCOPES
+                )
                 creds = flow.run_local_server(port=0)
             # Save the credentials for the next run
-            with open(self.currPath + '/token.pickle', 'wb') as token:
+            with open(self.currPath + "/token.pickle", "wb") as token:
                 pickle.dump(creds, token)
 
-        self.service = build('calendar', 'v3', credentials=creds, cache_discovery=False)
+        self.googleApi = build(
+            "calendar", "v3", credentials=creds, cache_discovery=False
+        )
 
-    def list_calendars(self):
-        # helps to retrieve ID for calendars within the account
-        # calendar IDs added to config.json will then be queried for retrieval of events
-        self.logger.info('Getting list of calendars')
-        calendars_result = self.service.calendarList().list().execute()
-        calendars = calendars_result.get('items', [])
+    def list_calendars(self) -> List[Calendar]:
+        """
+        Lists all the calendars that the user has access to. This is useful for debugging purposes.
+        """
+        self.logger.info("Getting list of calendars")
+        calendars_result = self.googleApi.calendarList().list().execute()
+        calendars: List[Calendar] = calendars_result.get("items", [])
         if not calendars:
-            self.logger.info('No calendars found.')
+            self.logger.info("No calendars found.")
         for calendar in calendars:
-            summary = calendar['summary']
-            cal_id = calendar['id']
+            summary = calendar["summary"]
+            cal_id = calendar["id"]
             self.logger.info("%s\t%s" % (summary, cal_id))
 
-    def to_datetime(self, isoDatetime, localTZ):
+    def to_datetime(self, isoDatetime, localTZ) -> dt.datetime:
         # replace Z with +00:00 is a workaround until datetime library decides what to do with the Z notation
-        toDatetime = dt.datetime.fromisoformat(isoDatetime.replace('Z', '+00:00'))
+        toDatetime = dt.datetime.fromisoformat(isoDatetime.replace("Z", "+00:00"))
         return toDatetime.astimezone(localTZ)
 
-    def is_recent_updated(self, updatedTime, thresholdHours):
+    def is_recent_updated(self, updatedTime: dt.datetime, thresholdHours: int) -> bool:
         # consider events updated within the past X hours as recently updated
-        utcnow = dt.datetime.now(dt.timezone.utc)
-        diff = (utcnow - updatedTime).total_seconds() / 3600  # get difference in hours
+        utcnow: dt.datetime = dt.datetime.now(dt.timezone.utc)
+        diff: float = (
+            utcnow - updatedTime
+        ).total_seconds() / 3600  # get difference in hours
         return diff < thresholdHours
 
-    def adjust_end_time(self, endTime, localTZ):
-        # check if end time is at 00:00 of next day, if so set to max time for day before
+    def adjust_end_time(self, endTime: dt.datetime, localTZ: DstTzInfo) -> dt.datetime:
+        """
+        check if end time is at 00:00 of next day, if so set to max time for day before
+        """
         if endTime.hour == 0 and endTime.minute == 0 and endTime.second == 0:
-            newEndtime = localTZ.localize(
-                dt.datetime.combine(endTime.date() - dt.timedelta(days=1), dt.datetime.max.time()))
+            newEndtime: dt.datetime = localTZ.localize(
+                dt.datetime.combine(
+                    endTime.date() - dt.timedelta(days=1), dt.datetime.max.time()
+                )
+            )
             return newEndtime
         else:
             return endTime
 
-    def is_multiday(self, start, end):
-        # check if event stretches across multiple days
+    def is_multiday(self, start, end) -> bool:
+        """
+        check if event stretches across multiple days
+        """
         return start.date() != end.date()
 
-    def retrieve_events(self, calendars, startDatetime, endDatetime, localTZ, thresholdHours):
-        # Call the Google Calendar API and return a list of events that fall within the specified dates
-        eventList = []
+    def retrieve_events(
+        self,
+        calendars: List[Calendar],
+        startDatetime: dt.datetime,
+        endDatetime: dt.datetime,
+        localTZ: DstTzInfo,
+        thresholdHours: int,
+    ) -> List[Event]:
+        """
+        Call the Google Calendar API and return a list of events that fall within the specified dates
+        """
+        eventList: List[Event] = []
 
-        minTimeStr = startDatetime.isoformat()
-        maxTimeStr = endDatetime.isoformat()
+        minTimeStr: str = startDatetime.isoformat()
+        maxTimeStr: str = endDatetime.isoformat()
         if False:
             return eventList
 
-        self.logger.info('Retrieving events between ' + minTimeStr + ' and ' + maxTimeStr + '...')
-        events_result = []
+        self.logger.info(
+            "Retrieving events between " + minTimeStr + " and " + maxTimeStr + "..."
+        )
+        events_result: List = []
         for cal in calendars:
             events_result.append(
-                self.service.events().list(calendarId=cal, timeMin=minTimeStr,
-                                           timeMax=maxTimeStr, singleEvents=True,
-                                           orderBy='startTime').execute()
+                self.googleApi.events()
+                .list(
+                    calendarId=cal,
+                    timeMin=minTimeStr,
+                    timeMax=maxTimeStr,
+                    singleEvents=True,
+                    orderBy="startTime",
+                )
+                .execute()
             )
 
-        events = []
+        events: List[Event] = []
         for eve in events_result:
-            events += eve.get('items', [])
+            events += eve.get("items", [])
             # events = events_result.get('items', [])
 
         if not events:
-            self.logger.info('No upcoming events found.')
+            self.logger.info("No upcoming events found.")
         for event in events:
             # extracting and converting events data into a new list
             newEvent = {}
-            newEvent['summary'] = event['summary']
+            newEvent["summary"] = event["summary"]
 
-            if event['start'].get('dateTime') is None:
-                newEvent['allday'] = True
-                newEvent['startDatetime'] = self.to_datetime(event['start'].get('date'), localTZ)
+            if event["start"].get("dateTime") is None:
+                newEvent["allday"] = True
+                newEvent["startDatetime"] = self.to_datetime(
+                    event["start"].get("date"), localTZ
+                )
             else:
-                newEvent['allday'] = False
-                newEvent['startDatetime'] = self.to_datetime(event['start'].get('dateTime'), localTZ)
+                newEvent["allday"] = False
+                newEvent["startDatetime"] = self.to_datetime(
+                    event["start"].get("dateTime"), localTZ
+                )
 
-            if event['end'].get('dateTime') is None:
-                newEvent['endDatetime'] = self.adjust_end_time(self.to_datetime(event['end'].get('date'), localTZ),
-                                                               localTZ)
+            if event["end"].get("dateTime") is None:
+                newEvent["endDatetime"] = self.adjust_end_time(
+                    self.to_datetime(event["end"].get("date"), localTZ), localTZ
+                )
             else:
-                newEvent['endDatetime'] = self.adjust_end_time(self.to_datetime(event['end'].get('dateTime'), localTZ),
-                                                               localTZ)
+                newEvent["endDatetime"] = self.adjust_end_time(
+                    endTime=self.to_datetime(
+                        isoDatetime=event["end"].get("dateTime"), localTZ=localTZ
+                    ),
+                    localTZ=localTZ,
+                )
 
-            newEvent['updatedDatetime'] = self.to_datetime(event['updated'], localTZ)
-            newEvent['isUpdated'] = self.is_recent_updated(newEvent['updatedDatetime'], thresholdHours)
-            newEvent['isMultiday'] = self.is_multiday(newEvent['startDatetime'], newEvent['endDatetime'])
+            newEvent["updatedDatetime"] = self.to_datetime(event["updated"], localTZ)
+            newEvent["isUpdated"] = self.is_recent_updated(
+                updatedTime=newEvent["updatedDatetime"], thresholdHours=thresholdHours
+            )
+            newEvent["isMultiday"] = self.is_multiday(
+                newEvent["startDatetime"], newEvent["endDatetime"]
+            )
             eventList.append(newEvent)
 
         # We need to sort eventList because the event will be sorted in "calendar order" instead of hours order
         # TODO: improve because of double cycle for now is not much cost
-        eventList = sorted(eventList, key=lambda k: k['startDatetime'])
+        eventList = sorted(eventList, key=lambda k: k["startDatetime"])
         return eventList

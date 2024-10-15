@@ -4,5 +4,13 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {},
+	"extensions": {
+		"recommendations": [
+			"github.copilot-chat",
+			"ms-python.vscode-pylance",
+			"github.copilot",
+			"ms-python.black-formatter"
+		]
+	}
 }
