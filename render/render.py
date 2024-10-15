@@ -11,19 +11,37 @@ calendar and refreshing of the eInk display. In the future, I might choose to ge
 RPi device, while using a ESP32 or PiZero purely to just retrieve the image from a file host and update the screen.
 """
 
+import PIL
+from datetime import timedelta
+from PIL.Image import Image
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.remote.webelement import WebElement
 from time import sleep
-from datetime import timedelta
-import pathlib
-from PIL import Image
+from typing import List, Literal, Tuple
+from typings_google_calendar_api.events import Event
+
+import datetime as dt
 import logging
+import pathlib
+import calendar
 
 
-class RenderHelper:
+from render_data import RenderData
 
-    def __init__(self, width, height, angle):
+BatteryText = Literal[
+    'batteryHide',
+    'battery0'
+    'battery20',
+    'battery40',
+    'battery60',
+    'battery80',
+    ]
+
+class ChromeRenderer:
+
+    def __init__(self, width: int, height: int, angle: int):
         self.logger = logging.getLogger('maginkcal')
         self.currPath = str(pathlib.Path(__file__).parent.absolute())
         self.htmlFile = 'file://' + self.currPath + '/calendar.html'
@@ -31,32 +49,35 @@ class RenderHelper:
         self.imageHeight = height
         self.rotateAngle = angle
 
-    def set_viewport_size(self, driver):
+    def set_viewport_size(self, driver: webdriver.Chrome):
 
         # Extract the current window size from the driver
         current_window_size = driver.get_window_size()
 
         # Extract the client window size from the html tag
-        html = driver.find_element(By.TAG_NAME,'html')
+        html: WebElement = driver.find_element(By.TAG_NAME,'html')
         inner_width = int(html.get_attribute("clientWidth"))
         inner_height = int(html.get_attribute("clientHeight"))
 
         # "Internal width you want to set+Set "outer frame width" to window size
-        target_width = self.imageWidth + (current_window_size["width"] - inner_width)
-        target_height = self.imageHeight + (current_window_size["height"] - inner_height)
+        target_width: int = self.imageWidth + (current_window_size["width"] - inner_width)
+        target_height: int = self.imageHeight + (current_window_size["height"] - inner_height)
 
         driver.set_window_rect(
             width=target_width,
             height=target_height)
 
-    def get_screenshot(self):
+    def get_black_red_images(self) -> Tuple[Image, Image]:
+        """This function captures a screenshot of the calendar,
+        processes the image to extract the grayscale and red"""
+
         opts = Options()
         opts.binary_location = '/usr/bin/chromium-browser'
         opts.add_argument("--headless")
-        opts.add_argument("--hide-scrollbars");
+        opts.add_argument("--hide-scrollbars")
         opts.add_argument('--force-device-scale-factor=1')
         driver = webdriver.Chrome(options=opts)
-        self.set_viewport_size(driver)
+        self.set_viewport_size(driver=driver)
         driver.get(self.htmlFile)
         sleep(1)
         driver.get_screenshot_as_file(self.currPath + '/calendar.png')
@@ -64,31 +85,39 @@ class RenderHelper:
 
         self.logger.info('Screenshot captured and saved to file.')
 
-        redimg = Image.open(self.currPath + '/calendar.png')  # get image)
-        rpixels = redimg.load()  # create the pixel map
-        blackimg = Image.open(self.currPath + '/calendar.png')  # get image)
-        bpixels = blackimg.load()  # create the pixel map
+        red_img = PIL.Image.open(self.currPath + '/calendar.png')  # get image)
+        red_pixels = red_img.load()  # create the pixel map
+        black_img = PIL.Image.open(self.currPath + '/calendar.png')  # get image)
+        black_pixels = black_img.load()  # create the pixel map
 
-        for i in range(redimg.size[0]):  # loop through every pixel in the image
-            for j in range(redimg.size[1]): # since both bitmaps are identical, cycle only once and not both bitmaps
-                if rpixels[i, j][0] <= rpixels[i, j][1] and rpixels[i, j][0] <= rpixels[i, j][2]:  # if is not red
-                    rpixels[i, j] = (255, 255, 255)  # change it to white in the red image bitmap
+        for i in range(red_img.size[0]):  # loop through every pixel in the image
+            for j in range(red_img.size[1]): # since both bitmaps are identical, cycle only once and not both bitmaps
+                if red_pixels[i, j][0] <= red_pixels[i, j][1] and red_pixels[i, j][0] <= red_pixels[i, j][2]:  # if is not red
+                    red_pixels[i, j] = (255, 255, 255)  # change it to white in the red image bitmap
 
-                elif bpixels[i, j][0] > bpixels[i, j][1] and bpixels[i, j][0] > bpixels[i, j][2]:  # if is red
-                    bpixels[i, j] = (255, 255, 255)  # change to white in the black image bitmap
+                elif black_pixels[i, j][0] > black_pixels[i, j][1] and black_pixels[i, j][0] > black_pixels[i, j][2]:  # if is red
+                    black_pixels[i, j] = (255, 255, 255)  # change to white in the black image bitmap
 
-        redimg = redimg.rotate(self.rotateAngle, expand=True)
-        blackimg = blackimg.rotate(self.rotateAngle, expand=True)
+        red_img: Image = red_img.rotate(self.rotateAngle, expand=True)
+        black_img: Image = black_img.rotate(self.rotateAngle, expand=True)
 
         self.logger.info('Image colours processed. Extracted grayscale and red images.')
-        return blackimg, redimg
+        return black_img, red_img
 
-    def get_day_in_cal(self, startDate, eventDate):
+    def get_day_in_cal(self, startDate: dt.datetime, eventDate: dt.datetime) -> int:
+        """
+        Returns the index of the day in the calendar list
+        """
+
         delta = eventDate - startDate
         return delta.days
 
-    def get_short_time(self, datetimeObj, is24hour=False):
-        datetime_str = ''
+    def get_short_time(self, datetimeObj, is24hour=False) -> str:
+        """
+        Returns a short time string in the format of 'HH:MM' or 'H:MMam/pm'
+        """
+
+        datetime_str: str = ''
         if is24hour:
             datetime_str = '{}:{:02d}'.format(datetimeObj.hour, datetimeObj.minute)
         else:
@@ -104,28 +133,26 @@ class RenderHelper:
             else:
                 datetime_str = '{}{}am'.format(str(datetimeObj.hour), datetime_str)
         return datetime_str
-
-    def process_inputs(self, calDict):
-        # calDict = {'events': eventList, 'calStartDate': calStartDate, 'today': currDate, 'lastRefresh': currDatetime, 'batteryLevel': batteryLevel}
+    
+    def render(self, data: RenderData, events: List[Event]):
         # first setup list to represent the 5 weeks in our calendar
         calList = []
         for i in range(35):
             calList.append([])
 
         # retrieve calendar configuration
-        maxEventsPerDay = calDict['maxEventsPerDay']
-        batteryDisplayMode = calDict['batteryDisplayMode']
-        dayOfWeekText = calDict['dayOfWeekText']
-        weekStartDay = calDict['weekStartDay']
-        is24hour = calDict['is24hour']
+        maxEventsPerDay = data['maxEventsPerDay']
+        dayOfWeekText = data['dayOfWeekText']
+        weekStartDay = data['weekStartDay']
+        is24hour = data['is24hour']
 
         # for each item in the eventList, add them to the relevant day in our calendar list
-        for event in calDict['events']:
-            idx = self.get_day_in_cal(calDict['calStartDate'], event['startDatetime'].date())
+        for event in events:
+            idx = self.get_day_in_cal(data['calStartDate'], event['startDatetime'].date())
             if idx >= 0:
                 calList[idx].append(event)
             if event['isMultiday']:
-                idx = self.get_day_in_cal(calDict['calStartDate'], event['endDatetime'].date())
+                idx = self.get_day_in_cal(data['calStartDate'], event['endDatetime'].date())
                 if idx < len(calList):
                     calList[idx].append(event)
 
@@ -134,45 +161,24 @@ class RenderHelper:
             calendar_template = file.read()
 
         # Insert month header
-        month_name = str(calDict['today'].month)
+        month_name = calendar.month_name[data['today'].month]
 
-        # Insert battery icon
-        # batteryDisplayMode - 0: do not show / 1: always show / 2: show when battery is low
-        battLevel = calDict['batteryLevel']
-
-        if batteryDisplayMode == 0:
-            battText = 'batteryHide'
-        elif batteryDisplayMode == 1:
-            if battLevel >= 80:
-                battText = 'battery80'
-            elif battLevel >= 60:
-                battText = 'battery60'
-            elif battLevel >= 40:
-                battText = 'battery40'
-            elif battLevel >= 20:
-                battText = 'battery20'
-            else:
-                battText = 'battery0'
-
-        elif batteryDisplayMode == 2 and battLevel < 20.0:
-            battText = 'battery0'
-        elif batteryDisplayMode == 2 and battLevel >= 20.0:
-            battText = 'batteryHide'
+        battery_text = self.get_battery_text(data)
 
         # Populate the day of week row
-        cal_days_of_week = ''
+        cal_days_of_week: str = ''
         for i in range(0, 7):
             cal_days_of_week += '<li class="font-weight-bold text-uppercase">' + dayOfWeekText[
                 (i + weekStartDay) % 7] + "</li>\n"
 
         # Populate the date and events
-        cal_events_text = ''
+        cal_events_text: str = ''
         for i in range(len(calList)):
-            currDate = calDict['calStartDate'] + timedelta(days=i)
-            dayOfMonth = currDate.day
-            if currDate == calDict['today']:
+            currDate: dt.datetime = data['calStartDate'] + timedelta(days=i)
+            dayOfMonth: int = currDate.day
+            if currDate == data['today']:
                 cal_events_text += '<li><div class="datecircle">' + str(dayOfMonth) + '</div>\n'
-            elif currDate.month != calDict['today'].month:
+            elif currDate.month != data['today'].month:
                 cal_events_text += '<li><div class="date text-muted">' + str(dayOfMonth) + '</div>\n'
             else:
                 cal_events_text += '<li><div class="date">' + str(dayOfMonth) + '</div>\n'
@@ -182,7 +188,7 @@ class RenderHelper:
                 cal_events_text += '<div class="event'
                 if event['isUpdated']:
                     cal_events_text += ' text-danger'
-                elif currDate.month != calDict['today'].month:
+                elif currDate.month != data['today'].month:
                     cal_events_text += ' text-muted'
                 if event['isMultiday']:
                     if event['startDatetime'].date() == currDate:
@@ -203,10 +209,37 @@ class RenderHelper:
 
         # Append the bottom and write the file
         htmlFile = open(self.currPath + '/calendar.html', "w")
-        htmlFile.write(calendar_template.format(month=month_name, battText=battText, dayOfWeek=cal_days_of_week,
+        htmlFile.write(calendar_template.format(month=month_name, battText=battery_text, dayOfWeek=cal_days_of_week,
                                                 events=cal_events_text))
         htmlFile.close()
 
-        calBlackImage, calRedImage = self.get_screenshot()
+        calBlackImage, calRedImage = self.get_black_red_images()
 
         return calBlackImage, calRedImage
+    
+    def get_battery_text(self, data: RenderData) -> BatteryText:
+        displayMode = data['batteryDisplayMode']
+
+        # Insert battery icon
+        # batteryDisplayMode - 0: do not show / 1: always show / 2: show when battery is low
+        level = data['batteryLevel']
+        if displayMode == 0:
+            text = 'batteryHide'
+        elif displayMode == 1:
+            if level >= 80:
+                text = 'battery80'
+            elif level >= 60:
+                text = 'battery60'
+            elif level >= 40:
+                text = 'battery40'
+            elif level >= 20:
+                text = 'battery20'
+            else:
+                text = 'battery0'
+
+        elif displayMode == 2 and level < 20.0:
+            text = 'battery0'
+        elif displayMode == 2 and level >= 20.0:
+            text = 'batteryHide'
+
+        return text

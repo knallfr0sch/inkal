@@ -6,21 +6,23 @@ credentials.json and token.pickle in the same folder as this file. If not, run q
 """
 
 from __future__ import print_function
-import datetime as dt
-import pickle
-import os.path
-import pathlib
-from typing import List
-from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-from typings_google_calendar_api.events import Event
+from googleapiclient.discovery import build
+from typing import List
 from typings_google_calendar_api.calendars import Calendar
+from typings_google_calendar_api.events import Event
+from pytz import timezone
+
+
+import datetime as dt
 import logging
-from pytz.tzinfo import DstTzInfo, StaticTzInfo
+import os.path
+import pathlib
+import pickle
 
 
-class GcalHelper:
+class GoogleCalendar:
 
     def __init__(self):
         self.logger = logging.getLogger("maginkcal")
@@ -54,8 +56,9 @@ class GcalHelper:
 
     def list_calendars(self) -> List[Calendar]:
         """
-        Lists all the calendars that the user has access to. This is useful for debugging purposes.
+        Lists all the calendars that the user has access to.
         """
+
         self.logger.info("Getting list of calendars")
         calendars_result = self.googleApi.calendarList().list().execute()
         calendars: List[Calendar] = calendars_result.get("items", [])
@@ -66,12 +69,14 @@ class GcalHelper:
             cal_id = calendar["id"]
             self.logger.info("%s\t%s" % (summary, cal_id))
 
+        return calendars
+
     def to_datetime(self, isoDatetime, localTZ) -> dt.datetime:
         # replace Z with +00:00 is a workaround until datetime library decides what to do with the Z notation
         toDatetime = dt.datetime.fromisoformat(isoDatetime.replace("Z", "+00:00"))
         return toDatetime.astimezone(localTZ)
 
-    def is_recent_updated(self, updatedTime: dt.datetime, thresholdHours: int) -> bool:
+    def is_recently_updated(self, updatedTime: dt.datetime, thresholdHours: int) -> bool:
         # consider events updated within the past X hours as recently updated
         utcnow: dt.datetime = dt.datetime.now(dt.timezone.utc)
         diff: float = (
@@ -79,7 +84,7 @@ class GcalHelper:
         ).total_seconds() / 3600  # get difference in hours
         return diff < thresholdHours
 
-    def adjust_end_time(self, endTime: dt.datetime, localTZ: DstTzInfo) -> dt.datetime:
+    def adjust_end_time(self, endTime: dt.datetime, localTZ: timezone) -> dt.datetime:
         """
         check if end time is at 00:00 of next day, if so set to max time for day before
         """
@@ -104,7 +109,7 @@ class GcalHelper:
         calendars: List[Calendar],
         startDatetime: dt.datetime,
         endDatetime: dt.datetime,
-        localTZ: DstTzInfo,
+        localTZ: timezone,
         thresholdHours: int,
     ) -> List[Event]:
         """
@@ -170,7 +175,7 @@ class GcalHelper:
                 )
 
             newEvent["updatedDatetime"] = self.to_datetime(event["updated"], localTZ)
-            newEvent["isUpdated"] = self.is_recent_updated(
+            newEvent["isUpdated"] = self.is_recently_updated(
                 updatedTime=newEvent["updatedDatetime"], thresholdHours=thresholdHours
             )
             newEvent["isMultiday"] = self.is_multiday(

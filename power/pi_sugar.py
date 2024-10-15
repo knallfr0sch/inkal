@@ -9,7 +9,10 @@ import subprocess
 import logging
 
 
-class PowerHelper:
+class PiSugar:
+    """
+    Interface with PiSugar
+    """
 
     def __init__(self):
         self.logger = logging.getLogger("maginkcal")
@@ -30,15 +33,11 @@ class PowerHelper:
             self.logger.info("Invalid battery output")
         return battery_float
 
-    def set_next_boot_datetime(self, datetime) -> bool:
-        # TODO: For directly scheduling next boot instead of using PiSugar's web interface
-        # Currently, it can be done manually through the PiSugar web interface
-        return True
-
     def sync_time(self) -> None:
         """
         Synchronise with PiSugar time
         """
+        
         try:
             ps = subprocess.Popen(("echo", "rtc_rtc2pi"), stdout=subprocess.PIPE)
             result = subprocess.check_output(

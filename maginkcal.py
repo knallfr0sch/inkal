@@ -8,58 +8,61 @@ conversions) that are not tested comprehensively, since my calendar/events are l
 There will also be work needed to adjust the calendar rendering for different screen sizes, such as modifying of the
 CSS stylesheets in the "render" folder.
 """
-import datetime as dt
-import sys
-from typing import List
 
-from pytz import _UTCclass, timezone
-from pytz.tzinfo import DstTzInfo, StaticTzInfo
+
+from config import Config
+from gcal.google_calendar import GoogleCalendar
+from power.pi_sugar import PiSugar
+from pytz import timezone
+from render_data import RenderData
+from render.render import ChromeRenderer
+from typing import List
 from typings_google_calendar_api.events import Event
-from gcal.gcal import GcalHelper
-from render.render import RenderHelper
-from power.power import PowerHelper
+
+import datetime as dt
 import json
 import logging
+import sys
 
 
 def main():
     # Basic configuration settings (user replaceable)
     configFile = open("config.json")
-    config = json.load(configFile)
+    config: Config = json.load(configFile)
 
-    displayTZ: DstTzInfo = timezone(
+    displayTZ: timezone = timezone(
         config["displayTZ"]
     )  # list of timezones - print(pytz.all_timezones)
-    thresholdHours: int = config[
+    thresholdHours = config[
         "thresholdHours"
     ]  # considers events updated within last 12 hours as recently updated
-    maxEventsPerDay: int = config[
+    maxEventsPerDay = config[
         "maxEventsPerDay"
     ]  # limits number of events to display (remainder displayed as '+X more')
-    isDisplayToScreen: bool = config[
+    isDisplayToScreen = config[
         "isDisplayToScreen"
     ]  # set to true when debugging rendering without displaying to screen
-    isShutdownOnComplete: bool = config[
+    isShutdownOnComplete = config[
         "isShutdownOnComplete"
     ]  # set to true to conserve power, false if in debugging mode
-    batteryDisplayMode: int = config[
+    batteryDisplayMode = config[
         "batteryDisplayMode"
     ]  # 0: do not show / 1: always show / 2: show when battery is low
-    weekStartDay: int = config["weekStartDay"]  # Monday = 0, Sunday = 6
-    dayOfWeekText: List[str] = config["dayOfWeekText"]  # Monday as first item in list
-    screenWidth: int = config[
+    weekStartDay = config["weekStartDay"]  # Monday = 0, Sunday = 6
+    dayOfWeekText = config["dayOfWeekText"]  # Monday as first item in list
+    screenWidth = config[
         "screenWidth"
     ]  # Width of E-Ink display. Default is landscape. Need to rotate image to fit.
-    screenHeight: int = config[
+    screenHeight = config[
         "screenHeight"
     ]  # Height of E-Ink display. Default is landscape. Need to rotate image to fit.
-    imageWidth: int = config[
+    imageWidth = config[
         "imageWidth"
     ]  # Width of image to be generated for display.
-    imageHeight: int = config[
+    imageHeight = config[
         "imageHeight"
     ]  # Height of image to be generated for display.
-    rotateAngle: int = config[
+    rotateAngle = config[
         "rotateAngle"
     ]  # If image is rendered in portrait orientation, angle to rotate to fit screen
     calendars: List[str] = config["calendars"]  # Google calendar ids
@@ -81,10 +84,10 @@ def main():
         # Note: For Python datetime.weekday() - Monday = 0, Sunday = 6
         # For this implementation, each week starts on a Sunday and the calendar begins on the nearest elapsed Sunday
         # The calendar will also display 5 weeks of events to cover the upcoming month, ending on a Saturday
-        powerService = PowerHelper()
+        pi_sugar = PiSugar()
         # powerService.sync_time()
-        currBatteryLevel = powerService.get_battery()
-        logger.info("Battery level at start: {:.3f}".format(currBatteryLevel))
+        battery_level = pi_sugar.get_battery()
+        logger.info("Battery level at start: {:.3f}".format(battery_level))
 
         currDatetime = dt.datetime.now(displayTZ)
         logger.info("Time synchronised to {}".format(currDatetime))
@@ -102,9 +105,9 @@ def main():
 
         # Using Google Calendar to retrieve all events within start and end date (inclusive)
         start: dt.datetime = dt.datetime.now()
-        gcalService = GcalHelper()
-        gcalService.list_calendars()
-        eventList: List[Event] = gcalService.retrieve_events(
+        googleCalendar = GoogleCalendar()
+        googleCalendar.list_calendars()
+        events: List[Event] = googleCalendar.retrieve_events(
             calendars=calendars,
             startDatetime=calStartDatetime,
             endDatetime=calEndDatetime,
@@ -113,22 +116,21 @@ def main():
         )
         logger.info("Calendar events retrieved in " + str(dt.datetime.now() - start))
 
-        # Populate dictionary with information to be rendered on e-ink display
-        calDict = {
-            "events": eventList,
-            "calStartDate": calStartDate,
-            "today": currDate,
-            "lastRefresh": currDatetime,
-            "batteryLevel": currBatteryLevel,
+        render_data: RenderData = {
             "batteryDisplayMode": batteryDisplayMode,
+            "batteryLevel": battery_level,
+            "calStartDate": calStartDate,
             "dayOfWeekText": dayOfWeekText,
-            "weekStartDay": weekStartDay,
-            "maxEventsPerDay": maxEventsPerDay,
+            "events": events,
             "is24hour": is24hour,
-        }
+            "lastRefresh": currDatetime,
+            "maxEventsPerDay": maxEventsPerDay,
+            "today": currDate,
+            "weekStartDay": weekStartDay,
+        } 
 
-        renderService = RenderHelper(imageWidth, imageHeight, rotateAngle)
-        calBlackImage, calRedImage = renderService.process_inputs(calDict)
+        renderer = ChromeRenderer(imageWidth, imageHeight, rotateAngle)
+        calBlackImage, calRedImage = renderer.render(render_data, events)
 
         if isDisplayToScreen:
             from display.display import DisplayHelper
@@ -140,8 +142,8 @@ def main():
             displayService.update(calBlackImage, calRedImage)
             displayService.sleep()
 
-        currBatteryLevel = powerService.get_battery()
-        logger.info("Battery level at end: {:.3f}".format(currBatteryLevel))
+        battery_level = pi_sugar.get_battery()
+        logger.info("Battery level at end: {:.3f}".format(battery_level))
 
     except Exception as e:
         logger.error(e)
