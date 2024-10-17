@@ -372,6 +372,20 @@ files = [
 ]
 
 [[package]]
+name = "htmlgenerator"
+version = "1.2.30"
+description = "Declarative HTML templating system with lazy rendering"
+optional = false
+python-versions = "*"
+files = [
+    {file = "htmlgenerator-1.2.30-py3-none-any.whl", hash = "sha256:31d7837f59998c9da5c54f01639e90ec9b380a6ea4031641675a06e24d111408"},
+    {file = "htmlgenerator-1.2.30.tar.gz", hash = "sha256:4153c37ae5d6971ff3f4d52fb236865bbc592ef24605dc075cef704a0f76bdc4"},
+]
+
+[package.extras]
+all = ["beautifulsoup4", "black", "lxml"]
+
+[[package]]
 name = "httplib2"
 version = "0.22.0"
 description = "A comprehensive HTTP client library."
@@ -936,4 +950,4 @@ h11 = ">=0.9.0,<1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "02229997f3c2997c892848ffd0ce42d6e26c053b2388b4a9d33dd4bda7bbfaa1"
+content-hash = "87b4c1fe5b5c00531bf8e657546795ea94e708e8aa2656a80250dc84c69e54d5"

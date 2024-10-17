@@ -11,8 +11,8 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from typing import List
 from typings_google_calendar_api.calendars import Calendar
-from typings_google_calendar_api.events import Event
-from pytz import timezone
+from typings_google_calendar_api.events import Event as GoogleEvent
+from pytz.tzinfo import DstTzInfo
 
 
 import datetime as dt
@@ -21,13 +21,15 @@ import os.path
 import pathlib
 import pickle
 
+from gcal.event import InkalEvent
+
 
 class GoogleCalendar:
 
     def __init__(self):
         self.logger = logging.getLogger("maginkcal")
         # Initialise the Google Calendar using the provided credentials and token
-        SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+        SCOPES = ["https/www.googleapis.com/auth/calendar.readonly"]
         self.currPath = str(pathlib.Path(__file__).parent.absolute())
 
         creds = None
@@ -71,6 +73,94 @@ class GoogleCalendar:
 
         return calendars
 
+    
+    def retrieve_events(
+        self,
+        calendars: List[Calendar],
+        startDatetime: dt.datetime,
+        endDatetime: dt.datetime,
+        localTZ: DstTzInfo,
+        thresholdHours: int,
+    ) -> List[InkalEvent]:
+        """
+        Call the Google Calendar API and return a list of events that fall within the specified dates
+        """
+        eventList: List[InkalEvent] = []
+
+        minTimeStr: str = startDatetime.isoformat()
+        maxTimeStr: str = endDatetime.isoformat()
+
+        self.logger.info(
+            "Retrieving events between " + minTimeStr + " and " + maxTimeStr + "..."
+        )
+
+        # Call the Calendar API
+        google_events: List[GoogleEvent] = []
+        for cal in calendars:
+            event_list: List[GoogleEvent] = self.googleApi.events().list(
+                calendarId=cal,
+                timeMin=minTimeStr,
+                timeMax=maxTimeStr,
+                singleEvents=True,
+                orderBy="startTime",
+            ).execute()
+            item_list = event_list.get("items", [])
+            google_events.extend(item_list)
+
+
+        if not google_events:
+            self.logger.info("No upcoming events found.")
+        for google_event in google_events:
+            inkal_event = self.to_inkal_event(google_event, localTZ, thresholdHours)
+
+            eventList.append(inkal_event)
+
+        # We need to sort eventList because the event will be sorted in "calendar order" instead of hours order
+        # TODO: improve because of double cycle for now is not much cost
+        eventList = sorted(eventList, key=lambda k: k["startDatetime"])
+        return eventList
+    
+    def to_inkal_event(self, google_event: GoogleEvent, localTZ, thresholdHours) -> InkalEvent:
+        """
+        Convert a Google Event to an InkalEvent
+        """
+        inkal_event: InkalEvent = {}
+        inkal_event["summary"] = google_event["summary"]
+
+        if google_event["start"].get("dateTime") is None:
+            inkal_event["allday"] = True
+            inkal_event["startDatetime"] = self.to_datetime(
+                google_event["start"].get("date"), localTZ
+            )
+        else:
+            inkal_event["allday"] = False
+            inkal_event["startDatetime"] = self.to_datetime(
+                google_event["start"].get("dateTime"), localTZ
+            )
+
+        if google_event["end"].get("dateTime") is None:
+            inkal_event["endDatetime"] = self.adjust_end_time(
+                self.to_datetime(google_event["end"].get("date"), localTZ), localTZ
+            )
+        else:
+            inkal_event["endDatetime"] = self.adjust_end_time(
+                endTime=self.to_datetime(
+                    isoDatetime=google_event["end"].get("dateTime"), localTZ=localTZ
+                ),
+                localTZ=localTZ,
+            )
+
+        inkal_event["updatedDatetime"] = self.to_datetime(google_event["updated"], localTZ)
+        inkal_event["isUpdated"] = self.is_recently_updated(
+            updatedTime=inkal_event["updatedDatetime"], thresholdHours=thresholdHours
+        )
+        inkal_event["isMultiday"] = self.is_multiday(
+            inkal_event["startDatetime"], inkal_event["endDatetime"]
+        )
+
+        return inkal_event
+
+
     def to_datetime(self, isoDatetime, localTZ) -> dt.datetime:
         # replace Z with +00:00 is a workaround until datetime library decides what to do with the Z notation
         toDatetime = dt.datetime.fromisoformat(isoDatetime.replace("Z", "+00:00"))
@@ -84,7 +174,7 @@ class GoogleCalendar:
         ).total_seconds() / 3600  # get difference in hours
         return diff < thresholdHours
 
-    def adjust_end_time(self, endTime: dt.datetime, localTZ: timezone) -> dt.datetime:
+    def adjust_end_time(self, endTime: dt.datetime, localTZ: DstTzInfo) -> dt.datetime:
         """
         check if end time is at 00:00 of next day, if so set to max time for day before
         """
@@ -103,87 +193,3 @@ class GoogleCalendar:
         check if event stretches across multiple days
         """
         return start.date() != end.date()
-
-    def retrieve_events(
-        self,
-        calendars: List[Calendar],
-        startDatetime: dt.datetime,
-        endDatetime: dt.datetime,
-        localTZ: timezone,
-        thresholdHours: int,
-    ) -> List[Event]:
-        """
-        Call the Google Calendar API and return a list of events that fall within the specified dates
-        """
-        eventList: List[Event] = []
-
-        minTimeStr: str = startDatetime.isoformat()
-        maxTimeStr: str = endDatetime.isoformat()
-        if False:
-            return eventList
-
-        self.logger.info(
-            "Retrieving events between " + minTimeStr + " and " + maxTimeStr + "..."
-        )
-        events_result: List = []
-        for cal in calendars:
-            events_result.append(
-                self.googleApi.events()
-                .list(
-                    calendarId=cal,
-                    timeMin=minTimeStr,
-                    timeMax=maxTimeStr,
-                    singleEvents=True,
-                    orderBy="startTime",
-                )
-                .execute()
-            )
-
-        events: List[Event] = []
-        for eve in events_result:
-            events += eve.get("items", [])
-            # events = events_result.get('items', [])
-
-        if not events:
-            self.logger.info("No upcoming events found.")
-        for event in events:
-            # extracting and converting events data into a new list
-            newEvent = {}
-            newEvent["summary"] = event["summary"]
-
-            if event["start"].get("dateTime") is None:
-                newEvent["allday"] = True
-                newEvent["startDatetime"] = self.to_datetime(
-                    event["start"].get("date"), localTZ
-                )
-            else:
-                newEvent["allday"] = False
-                newEvent["startDatetime"] = self.to_datetime(
-                    event["start"].get("dateTime"), localTZ
-                )
-
-            if event["end"].get("dateTime") is None:
-                newEvent["endDatetime"] = self.adjust_end_time(
-                    self.to_datetime(event["end"].get("date"), localTZ), localTZ
-                )
-            else:
-                newEvent["endDatetime"] = self.adjust_end_time(
-                    endTime=self.to_datetime(
-                        isoDatetime=event["end"].get("dateTime"), localTZ=localTZ
-                    ),
-                    localTZ=localTZ,
-                )
-
-            newEvent["updatedDatetime"] = self.to_datetime(event["updated"], localTZ)
-            newEvent["isUpdated"] = self.is_recently_updated(
-                updatedTime=newEvent["updatedDatetime"], thresholdHours=thresholdHours
-            )
-            newEvent["isMultiday"] = self.is_multiday(
-                newEvent["startDatetime"], newEvent["endDatetime"]
-            )
-            eventList.append(newEvent)
-
-        # We need to sort eventList because the event will be sorted in "calendar order" instead of hours order
-        # TODO: improve because of double cycle for now is not much cost
-        eventList = sorted(eventList, key=lambda k: k["startDatetime"])
-        return eventList

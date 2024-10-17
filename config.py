@@ -9,11 +9,9 @@ class Config(TypedDict):
     
     batteryDisplayMode: Literal[0, 1, 2]
     calendars: List[str]
-    dayOfWeekText: List[str]
     displayTZ: pytz.timezone
     imageHeight: int
     imageWidth: int
-    is24hour: bool
     isDisplayToScreen: bool
     isShutdownOnComplete: bool
     maxEventsPerDay: int
@@ -21,4 +19,3 @@ class Config(TypedDict):
     screenHeight: int
     screenWidth: int
     thresholdHours: int
-    weekStartDay: int

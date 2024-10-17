@@ -48,8 +48,6 @@ def main():
     batteryDisplayMode = config[
         "batteryDisplayMode"
     ]  # 0: do not show / 1: always show / 2: show when battery is low
-    weekStartDay = config["weekStartDay"]  # Monday = 0, Sunday = 6
-    dayOfWeekText = config["dayOfWeekText"]  # Monday as first item in list
     screenWidth = config[
         "screenWidth"
     ]  # Width of E-Ink display. Default is landscape. Need to rotate image to fit.
@@ -93,9 +91,9 @@ def main():
         logger.info("Time synchronised to {}".format(currDatetime))
         currDate = currDatetime.date()
         calStartDate = currDate - dt.timedelta(
-            days=((currDate.weekday() + (7 - weekStartDay)) % 7)
+            days=(currDate.weekday() % 7)
         )
-        calEndDate = calStartDate + dt.timedelta(days=(5 * 7 - 1))
+        calEndDate = calStartDate + dt.timedelta(days=(4 * 7 - 1))
         calStartDatetime = displayTZ.localize(
             dt.datetime.combine(calStartDate, dt.datetime.min.time())
         )
@@ -120,13 +118,10 @@ def main():
             "batteryDisplayMode": batteryDisplayMode,
             "batteryLevel": battery_level,
             "calStartDate": calStartDate,
-            "dayOfWeekText": dayOfWeekText,
             "events": events,
-            "is24hour": is24hour,
             "lastRefresh": currDatetime,
             "maxEventsPerDay": maxEventsPerDay,
             "today": currDate,
-            "weekStartDay": weekStartDay,
         } 
 
         renderer = ChromeRenderer(imageWidth, imageHeight, rotateAngle)
@@ -136,7 +131,7 @@ def main():
             from display.display import EInkDisplay
 
             eInkDisplay = EInkDisplay(screenWidth, screenHeight)
-            if currDate.weekday() == weekStartDay:
+            if currDate.weekday() == 0:
                 # calibrate display once a week to prevent ghosting
                 eInkDisplay.calibrate(cycles=0)  # to calibrate in production
             eInkDisplay.update(black_image, red_image)

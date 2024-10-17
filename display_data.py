@@ -9,10 +9,7 @@ class DisplayData(TypedDict):
     batteryDisplayMode: Literal[0, 1, 2]
     batteryLevel: int
     calStartDate: datetime
-    dayOfWeekText: str
     events: List[str]
-    is24hour: bool
     lastRefresh: datetime
     maxEventsPerDay: int
     today: datetime
-    weekStartDay: str

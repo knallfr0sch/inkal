@@ -19,6 +19,7 @@ rpi-gpio = "^0.7.1"
 spidev = "^3.6"
 typings-google-calendar-api = "^1.0.0"
 pytest = "^8.3.3"
+htmlgenerator = "^1.2.30"
 
 
 [build-system]
