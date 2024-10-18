@@ -10,6 +10,7 @@ CSS stylesheets in the "render" folder.
 """
 
 
+from typings_google_calendar_api.calendars import Calendar
 from config import Config
 from gcal.google_calendar import GoogleCalendar
 from power.pi_sugar import PiSugar
@@ -64,7 +65,6 @@ def main():
         "rotateAngle"
     ]  # If image is rendered in portrait orientation, angle to rotate to fit screen
     calendars: List[str] = config["calendars"]  # Google calendar ids
-    is24hour: bool = config["is24h"]  # set 24 hour time
 
     # Create and configure logger
     logging.basicConfig(
@@ -104,7 +104,8 @@ def main():
         # Using Google Calendar to retrieve all events within start and end date (inclusive)
         start: dt.datetime = dt.datetime.now()
         googleCalendar = GoogleCalendar()
-        googleCalendar.list_calendars()
+        # google_calendars: List[Calendar] = googleCalendar.list_calendars()
+
         events: List[Event] = googleCalendar.retrieve_events(
             calendars=calendars,
             startDatetime=calStartDatetime,

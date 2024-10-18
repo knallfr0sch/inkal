@@ -7,10 +7,10 @@
 	"settings": {},
 	"extensions": {
 		"recommendations": [
-			"github.copilot-chat",
-			"ms-python.vscode-pylance",
 			"github.copilot",
-			"ms-python.black-formatter"
+			"github.copilot-chat",
+			"ms-python.black-formatter",
+			"ms-python.vscode-pylance",
 		]
 	}
 }

@@ -12,14 +12,13 @@ RPi device, while using a ESP32 or PiZero purely to just retrieve the image from
 """
 
 import PIL
-from datetime import timedelta
 from PIL.Image import Image
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webelement import WebElement
 from time import sleep
-from typing import Dict, List, Literal, Tuple
+from typing import Dict, List, Tuple
 from typings_google_calendar_api.events import Event
 
 import datetime as dt
@@ -27,18 +26,10 @@ import logging
 import pathlib
 import calendar
 
-from htmlgenerator import LI, OL, render, DIV
 
 from display_data import DisplayData
+from render.html_generator import HtmlGenerator
 
-BatteryText = Literal[
-    'batteryHide',
-    'battery0'
-    'battery20',
-    'battery40',
-    'battery60',
-    'battery80',
-    ]
 
 class ChromeRenderer:
 
@@ -48,6 +39,7 @@ class ChromeRenderer:
         self.imageWidth = width
         self.imageHeight = height
         self.rotateAngle = angle
+        self.html_generator = HtmlGenerator()
 
     
     def render(self, data: DisplayData, events: List[Event]) -> Tuple[Image, Image]:
@@ -55,9 +47,6 @@ class ChromeRenderer:
         cal_list: List[List[Dict]] = []
         for i in range(28):
             cal_list.append([])
-
-        # retrieve calendar configuration
-        maxEventsPerDay = data['maxEventsPerDay']
 
         # for each item in the eventList, add them to the relevant day in our calendar list
         for event in events:
@@ -76,17 +65,12 @@ class ChromeRenderer:
         # Insert month header
         month_name = calendar.month_name[data['today'].month]
 
-        battery_text = self.get_battery_text(data)
+        battery_text = self.html_generator.get_battery_text(data)
 
-        # Populate the day of week row
-        cal_days_of_week = self.get_week_days_html()
-
-        # Populate the date and events
-        cal_events_text = self.get_event_html(cal_list, data, maxEventsPerDay)
+        grid = self.html_generator.get_grid_html(cal_list, data)
                     
         htmlFile = open(self.currPath + '/calendar.html', "w")
-        htmlFile.write(calendar_template.format(month=month_name, battText=battery_text, weekdays=cal_days_of_week,
-                                                events=cal_events_text))
+        htmlFile.write(calendar_template.format(month=month_name, battText=battery_text, grid=grid))
         htmlFile.close()
         htmlFileUri = 'file://' + self.currPath + '/calendar.html'
 
@@ -98,24 +82,14 @@ class ChromeRenderer:
         """This function captures a screenshot of the calendar,
         processes the image to extract the grayscale and red"""
 
-        opts = Options()
-        opts.binary_location = '/usr/bin/chromium-browser'
-        # opts.add_argument("--headless")
-        opts.add_argument("--hide-scrollbars")
-        opts.add_argument('--force-device-scale-factor=1')
-        driver = webdriver.Chrome(options=opts)
-        self.set_viewport_size(driver=driver)
-        driver.get(htmlFile)
-        sleep(1)
-        driver.get_screenshot_as_file(self.currPath + '/calendar.png')
-        driver.quit()
+        png_path = self.chrome_render_calendar_png(htmlFile)
 
         self.logger.info('Screenshot captured and saved to file.')
 
-        red_img = PIL.Image.open(self.currPath + '/calendar.png')  # get image)
-        red_pixels = red_img.load()  # create the pixel map
-        black_img = PIL.Image.open(self.currPath + '/calendar.png')  # get image)
-        black_pixels = black_img.load()  # create the pixel map
+        red_img = PIL.Image.open(png_path)
+        red_pixels = red_img.load()
+        black_img = PIL.Image.open(png_path)
+        black_pixels = black_img.load()
 
         for i in range(red_img.size[0]):  # loop through every pixel in the image
             for j in range(red_img.size[1]): # since both bitmaps are identical, cycle only once and not both bitmaps
@@ -131,98 +105,22 @@ class ChromeRenderer:
         self.logger.info('Image colours processed. Extracted grayscale and red images.')
         return black_img, red_img
     
-    def get_battery_text(self, data: DisplayData) -> BatteryText:
-        displayMode = data['batteryDisplayMode']
+    def chrome_render_calendar_png(self, htmlFile: str) -> str:
+        opts = Options()
+        opts.binary_location = '/usr/bin/chromium-browser'
+        # opts.add_argument("--headless")
+        opts.add_argument("--hide-scrollbars")
+        opts.add_argument('--force-device-scale-factor=1')
+        driver = webdriver.Chrome(options=opts)
+        self.set_viewport_size(driver=driver)
+        driver.get(htmlFile)
+        sleep(1)
+        png_path = self.currPath + '/calendar.png'
+        driver.get_screenshot_as_file(png_path)
+        driver.quit()
+        return png_path    
 
-        # Insert battery icon
-        # batteryDisplayMode - 0: do not show / 1: always show / 2: show when battery is low
-        level = data['batteryLevel']
-        if displayMode == 0:
-            text = 'batteryHide'
-        elif displayMode == 1:
-            if level >= 80:
-                text = 'battery80'
-            elif level >= 60:
-                text = 'battery60'
-            elif level >= 40:
-                text = 'battery40'
-            elif level >= 20:
-                text = 'battery20'
-            else:
-                text = 'battery0'
-
-        elif displayMode == 2 and level < 20.0:
-            text = 'battery0'
-        elif displayMode == 2 and level >= 20.0:
-            text = 'batteryHide'
-
-        return text
-    
-    def get_week_days_html(self) -> str:
-        dayOfWeekText: list[str] = [day[:2].lower() for day in calendar.day_abbr]
-
-        li_elements = []
-        for i in range(0, 7):
-            li_element = LI(dayOfWeekText[i % 7], _class='font-weight-bold text-uppercase')
-            li_elements.append(li_element)
-        
-        weekday_list = OL(*li_elements, _class="day-names list-unstyled text-center")
-
-        cal_days_of_week = render(weekday_list, {})
-        return cal_days_of_week
-    
-    def get_event_html(self, cal_list: List[List[Dict]], data: Dict, maxEventsPerDay: int) -> str:
-        # Populate the date and events
-        cal_events_elements = []
-
-        for i in range(len(cal_list)):
-            currDate: dt.datetime = data['calStartDate'] + dt.timedelta(days=i)
-            dayOfMonth: int = currDate.day
-            
-            if currDate == data['today']:
-                date_div = DIV(str(dayOfMonth), _class="datecircle")
-            elif currDate.month != data['today'].month:
-                date_div = DIV(str(dayOfMonth), _class="date text-muted")
-            else:
-                date_div = DIV(str(dayOfMonth), _class="date")
-            
-            li_element = LI(date_div)
-            
-            for j in range(min(len(cal_list[i]), maxEventsPerDay)):
-                event = cal_list[i][j]
-                event_classes = ['event']
-                if event['isUpdated']:
-                    event_classes.append('text-danger')
-                elif currDate.month != data['today'].month:
-                    event_classes.append('text-muted')
-                
-                if event['isMultiday']:
-                    if event['startDatetime'].date() == currDate:
-                        event_text = '►' + event['summary']
-                    else:
-                        event_text = '◄' + event['summary']
-                elif event['allday']:
-                    event_text = event['summary']
-                else:
-                    event_text = self.get_short_time(event['startDatetime']) + ' ' + event['summary']
-                
-                event_div = DIV(event_text, _class=' '.join(event_classes))
-                li_element.append(event_div)
-            
-            if len(cal_list[i]) > maxEventsPerDay:
-                more_events_div = DIV(str(len(cal_list[i]) - maxEventsPerDay) + ' more', _class="event text-muted")
-                li_element.append(more_events_div)
-            
-            cal_events_elements.append(li_element)
-            ordered_list = OL(*cal_events_elements, _class="days list-unstyled")
-
-            
-        
-        cal_events_html = render(ordered_list, {}) + '\n'
-        return cal_events_html
-
-    def set_viewport_size(self, driver: webdriver.Chrome):
-
+    def set_viewport_size(self, driver: webdriver.Chrome) -> None:
         # Extract the current window size from the driver
         current_window_size = driver.get_window_size()
 
@@ -238,7 +136,6 @@ class ChromeRenderer:
         driver.set_window_rect(
             width=target_width,
             height=target_height)
-
     
 
     def get_day_in_cal(self, startDate: dt.datetime, eventDate: dt.datetime) -> int:
@@ -246,12 +143,5 @@ class ChromeRenderer:
         Returns the index of the day in the calendar list
         """
 
-        delta = eventDate - startDate
+        delta: dt.timedelta = eventDate - startDate
         return delta.days
-
-    def get_short_time(self, datetimeObj) -> str:
-        """
-        Returns a short time string in the format of 'HH:MM'
-        """
-
-        return '{}:{:02d}'.format(datetimeObj.hour, datetimeObj.minute)
