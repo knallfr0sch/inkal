@@ -31,6 +31,9 @@ def main():
     configFile = open("config.json")
     config: Config = json.load(configFile)
 
+
+    #  READ CONFIGURATION
+
     displayTZ: timezone = timezone(
         config["displayTZ"]
     )  # list of timezones - print(pytz.all_timezones)
@@ -66,6 +69,7 @@ def main():
     ]  # If image is rendered in portrait orientation, angle to rotate to fit screen
     calendars: List[str] = config["calendars"]  # Google calendar ids
 
+
     # Create and configure logger
     logging.basicConfig(
         filename="logfile.log",
@@ -78,13 +82,9 @@ def main():
     logger.info("Starting daily calendar update")
 
     try:
-        # Establish current date and time information
-        # Note: For Python datetime.weekday() - Monday = 0, Sunday = 6
-        # For this implementation, each week starts on a Sunday and the calendar begins on the nearest elapsed Sunday
-        # The calendar will also display 5 weeks of events to cover the upcoming month, ending on a Saturday
         pi_sugar = PiSugar()
-        # powerService.sync_time()
-        battery_level = pi_sugar.get_battery()
+        pi_sugar.sync_time()
+        battery_level: float = pi_sugar.get_battery()
         logger.info("Battery level at start: {:.3f}".format(battery_level))
 
         currDatetime = dt.datetime.now(displayTZ)
@@ -101,9 +101,9 @@ def main():
             dt.datetime.combine(calEndDate, dt.datetime.max.time())
         )
 
-        # Using Google Calendar to retrieve all events within start and end date (inclusive)
         start: dt.datetime = dt.datetime.now()
         googleCalendar = GoogleCalendar()
+
         # google_calendars: List[Calendar] = googleCalendar.list_calendars()
 
         events: List[Event] = googleCalendar.retrieve_events(
