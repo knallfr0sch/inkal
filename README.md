@@ -8,4 +8,6 @@ export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
 
 reload
 
+install chromium
+
 
