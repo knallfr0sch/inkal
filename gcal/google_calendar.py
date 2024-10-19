@@ -29,7 +29,7 @@ class GoogleCalendar:
     def __init__(self):
         self.logger = logging.getLogger("maginkcal")
         # Initialise the Google Calendar using the provided credentials and token
-        SCOPES = ["https/www.googleapis.com/auth/calendar.readonly"]
+        SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
         self.currPath = str(pathlib.Path(__file__).parent.absolute())
 
         creds = None
