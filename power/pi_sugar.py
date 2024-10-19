@@ -22,14 +22,18 @@ class PiSugar:
         """
 
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.connect(("127.0.0.1", pi_sugar_tcp_port))            
-                sock.sendall(b'get battery')            
-                raw_data = sock.recv(1024)
-                
-            data_str = raw_data.decode('utf-8')        
-            battery_level = float(data_str.split(":")[1].strip())
-            print(type(battery_level))
+            if socket.gethostname() == "raspberrypizero":
+
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    sock.connect(("127.0.0.1", pi_sugar_tcp_port))            
+                    sock.sendall(b'get battery')            
+                    raw_data = sock.recv(1024)
+                    
+                data_str = raw_data.decode('utf-8')        
+                battery_level = float(data_str.split(":")[1].strip())
+                print(type(battery_level))
+            else:
+                battery_level = 0.2
 
         except (ValueError, IndexError) as e:
             self.logger.error(f"Failed to parse battery level: {e}")
