@@ -13,11 +13,7 @@ RPi device, while using a ESP32 or PiZero purely to just retrieve the image from
 
 import PIL
 from PIL.Image import Image
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webelement import WebElement
-from time import sleep
+import subprocess
 from typing import Dict, List, Tuple
 from typings_google_calendar_api.events import Event
 
@@ -106,38 +102,18 @@ class ChromeRenderer:
         return black_img, red_img
     
     def chrome_render_calendar_png(self, htmlFile: str) -> str:
-        opts = Options()
-        opts.binary_location = '/usr/bin/chromium-browser'
-        opts.add_argument("--headless")
-        opts.add_argument("--hide-scrollbars")
-        opts.add_argument('--force-device-scale-factor=1')
-        driver = webdriver.Chrome(options=opts)
-        service = webdriver.ChromeService(executable_path='/usr/bin/chromedriver')
-        self.set_viewport_size(driver=driver, service=service)
-        driver.get(htmlFile)
-        sleep(1)
         png_path = self.currPath + '/calendar.png'
-        driver.get_screenshot_as_file(png_path)
-        driver.quit()
+        subprocess.run([
+            'chromium-browser',
+            '--headless',
+            '--disable-gpu',
+            '--screenshot',
+            '--hide-scrollbars',
+            f'--window-size={self.imageWidth},{self.imageHeight}',
+            htmlFile,
+            f'--screenshot={png_path}'
+        ], check=True)
         return png_path    
-
-    def set_viewport_size(self, driver: webdriver.Chrome) -> None:
-        # Extract the current window size from the driver
-        current_window_size = driver.get_window_size()
-
-        # Extract the client window size from the html tag
-        html: WebElement = driver.find_element(By.TAG_NAME,'html')
-        inner_width = int(html.get_attribute("clientWidth"))
-        inner_height = int(html.get_attribute("clientHeight"))
-
-        # "Internal width you want to set+Set "outer frame width" to window size
-        target_width: int = self.imageWidth + (current_window_size["width"] - inner_width)
-        target_height: int = self.imageHeight + (current_window_size["height"] - inner_height)
-
-        driver.set_window_rect(
-            width=target_width,
-            height=target_height)
-    
 
     def get_day_in_cal(self, startDate: dt.datetime, eventDate: dt.datetime) -> int:
         """

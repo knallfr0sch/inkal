@@ -96,6 +96,10 @@ Calendar Styling */
   border-radius: 0px;
 }
 
+.days {
+  min-height: 90px;
+}
+
 .ol {
   list-style-type: none;
 }
@@ -123,6 +127,7 @@ Calendar Styling */
 
 .grid__item {
   overflow: hidden;
+  min-height: 150px;
 }
 
 .minute {

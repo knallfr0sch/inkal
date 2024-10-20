@@ -28,7 +28,6 @@ class HtmlGenerator:
             style="""
                 display: grid;
                 position: relative;
-                grid-template-rows: [days] 0.5fr repeat(4, 1fr);
                 grid-template-columns: repeat(7, 1fr); gap: 0.5rem;
                 """,
         )
