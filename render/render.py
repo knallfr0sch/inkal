@@ -111,7 +111,7 @@ class ChromeRenderer:
             '--hide-scrollbars',            
             f'--window-size={self.imageWidth},{self.imageHeight}',
             htmlFile,
-            f'--screenshot={png_path}'
+            f'--screenshot={png_path}',
             '--force-device-scale-factor=1'# Render correctly on displays smaller than image size
         ], check=True)
         return png_path    
