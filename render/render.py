@@ -108,7 +108,7 @@ class ChromeRenderer:
     def chrome_render_calendar_png(self, htmlFile: str) -> str:
         opts = Options()
         opts.binary_location = '/usr/bin/chromium-browser'
-        # opts.add_argument("--headless")
+        opts.add_argument("--headless")
         opts.add_argument("--hide-scrollbars")
         opts.add_argument('--force-device-scale-factor=1')
         driver = webdriver.Chrome(options=opts)
