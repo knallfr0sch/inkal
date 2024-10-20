@@ -107,7 +107,6 @@ class ChromeRenderer:
             'chromium-browser',
             '--headless',                   # No use for user interface
             '--disable-gpu',                # For Pi
-            '--screenshot',                 # Take a screenshot
             '--hide-scrollbars',            
             f'--window-size={self.imageWidth},{self.imageHeight}',
             htmlFile,
