@@ -105,10 +105,11 @@ class ChromeRenderer:
         png_path = self.currPath + '/calendar.png'
         subprocess.run([
             'chromium-browser',
-            '--headless',
-            '--disable-gpu',
-            '--screenshot',
-            '--hide-scrollbars',
+            '--headless',                   # No use for user interface
+            '--disable-gpu',                # For Pi
+            '--screenshot',                 # Take a screenshot
+            '--hide-scrollbars',            
+            '--force-device-scale-factor=1,'# Render correctly on displays smaller than image size
             f'--window-size={self.imageWidth},{self.imageHeight}',
             htmlFile,
             f'--screenshot={png_path}'
