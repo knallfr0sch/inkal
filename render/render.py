@@ -66,7 +66,12 @@ class ChromeRenderer:
         grid = self.html_generator.get_grid_html(cal_list, data)
                     
         htmlFile = open(self.currPath + '/calendar.html', "w")
-        htmlFile.write(calendar_template.format(month=month_name, battText=battery_text, grid=grid))
+        htmlFile.write(calendar_template.format(
+            month=month_name,
+            battText=battery_text,
+            grid=grid,
+            time=dt.datetime.now().strftime('%H:%M')
+        ))
         htmlFile.close()
         htmlFileUri = 'file://' + self.currPath + '/calendar.html'
 
