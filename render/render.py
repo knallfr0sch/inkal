@@ -109,10 +109,10 @@ class ChromeRenderer:
             '--disable-gpu',                # For Pi
             '--screenshot',                 # Take a screenshot
             '--hide-scrollbars',            
-            '--force-device-scale-factor=1'# Render correctly on displays smaller than image size
             f'--window-size={self.imageWidth},{self.imageHeight}',
             htmlFile,
             f'--screenshot={png_path}'
+            '--force-device-scale-factor=1'# Render correctly on displays smaller than image size
         ], check=True)
         return png_path    
 
