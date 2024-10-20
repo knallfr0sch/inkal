@@ -112,7 +112,8 @@ class ChromeRenderer:
         opts.add_argument("--hide-scrollbars")
         opts.add_argument('--force-device-scale-factor=1')
         driver = webdriver.Chrome(options=opts)
-        self.set_viewport_size(driver=driver)
+        service = webdriver.ChromeService(executable_path='/usr/bin/chromedriver')
+        self.set_viewport_size(driver=driver, service=service)
         driver.get(htmlFile)
         sleep(1)
         png_path = self.currPath + '/calendar.png'
