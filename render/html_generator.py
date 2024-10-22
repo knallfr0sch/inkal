@@ -5,6 +5,8 @@ import calendar
 
 from htmlgenerator import LI, OL, HTMLElement, Tuple, render, DIV
 from display_data import DisplayData
+from gcal.inkal_event import InkalEvent
+from gcal.inkal_task import InkalTask
 
 BatteryText = Literal[
     'batteryHide',
@@ -20,7 +22,7 @@ class HtmlGenerator:
     Declarative HTML generator for the calendar display
     """
 
-    def get_grid_html(self, cal_list, data: DisplayData) -> str:
+    def get_grid_html(self, cal_list: List[List[InkalEvent | InkalTask]], data: DisplayData) -> str:
         grid = DIV(
             self.get_week_days(),
             self.get_events(cal_list, data),
@@ -57,7 +59,7 @@ class HtmlGenerator:
 
         return weekday_list
     
-    def get_events(self, cal_list: List[List[Dict]], data: DisplayData) -> HTMLElement:
+    def get_events(self, cal_list: List[List[InkalEvent | InkalTask]], data: DisplayData) -> HTMLElement:
         """
         Generate the HTML for the events 
         """
@@ -91,30 +93,15 @@ class HtmlGenerator:
             )
             
             for j in range(min(len(cal_list[i]), maxEventsPerDay)):
-                event = cal_list[i][j]
-                event_classes = ['event']
-                if event['isUpdated']:
-                    event_classes.append('text-danger')
-                elif currDate.month != today.month:
-                    event_classes.append('text-muted')
-                
-                if event['isMultiday']:
-                    if event['startDatetime'].date() == currDate:
-                        event_text = '►' + event['summary']
-                    else:
-                        event_text = '◄' + event['summary']
-                elif event['allday']:
-                    event_text = event['summary']
-                else:
-                    time_div = self.get_time_element(event['startDatetime'])
-                    event_text = event['summary']
-                
-                event_div = DIV(
-                    time_div,
-                    event_text,
-                    _class=' '.join(event_classes)
-                )
-                day.append(event_div)
+                calendar_entry = cal_list[i][j]
+                entry_div = None
+                if calendar_entry['kind'] == 'calendar#event':
+                    event: InkalEvent = calendar_entry
+                    entry_div = self.get_event_html(event, currDate, today)
+                elif calendar_entry['kind'] == 'tasks#task':
+                    task: InkalTask = calendar_entry
+                    entry_div = self.get_task_html(task, currDate, today)
+                day.append(entry_div)
             
             if len(cal_list[i]) > maxEventsPerDay:
                 more_events_div = DIV(str(len(cal_list[i]) - maxEventsPerDay) + ' more', _class="event text-muted")
@@ -128,6 +115,53 @@ class HtmlGenerator:
             )            
         
         return days
+    
+    def get_event_html(self, event: InkalEvent, currDate: dt.datetime, today: dt.datetime) -> HTMLElement:
+        event_classes = ['event']
+
+        if event['isUpdated']:
+            event_classes.append('text-danger')
+        elif currDate.month != today.month:
+            event_classes.append('text-muted')
+        
+        time_div = None
+        if event['isMultiday']:
+            if event['startDatetime'].date() == currDate:
+                event_text = '►' + event['summary']
+            else:
+                event_text = '◄' + event['summary']
+        elif event['allday']:
+            event_text = event['summary']
+        else:
+            time_div = self.get_time_element(event['startDatetime'])
+            event_text = event['summary']
+        
+        if (time_div is not None):
+            event_div = DIV(
+                time_div,
+                event_text,
+                _class=' '.join(event_classes)
+            )
+        else:
+            event_div = DIV(
+                event_text,
+                _class=' '.join(event_classes)
+            )
+        return event_div
+    
+    def get_task_html(self, task: InkalTask, currDate: dt.datetime, today: dt.datetime) -> HTMLElement:
+        task_classes = ['task']
+
+        if task['isUpdated']:
+            task_classes.append('text-danger')
+        elif currDate.month != today.month:
+            task_classes.append('text-muted')
+        
+        task_div = DIV(
+            task['title'],
+            _class=' '.join(task_classes)
+        )
+        return task_div
     
     def get_divider(self) -> List[HTMLElement]:
         return [

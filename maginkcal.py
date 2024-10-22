@@ -12,12 +12,17 @@ CSS stylesheets in the "render" folder.
 
 from typings_google_calendar_api.calendars import Calendar
 from config import Config
+from gcal.google_auth import GoogleAuth
 from gcal.google_calendar import GoogleCalendar
+from gcal.google_tasks import GoogleTasks
+from gcal.inkal_event import InkalEvent
+from gcal.inkal_task import InkalTask
 from power.pi_sugar import PiSugar
 from pytz import timezone
+from pytz.tzinfo import DstTzInfo
 from display_data import DisplayData
 from render.render import ChromeRenderer
-from typing import List
+from typing import Any, List
 from typings_google_calendar_api.events import Event
 
 import datetime as dt
@@ -34,7 +39,7 @@ def main():
 
     #  READ CONFIGURATION
 
-    displayTZ: timezone = timezone(
+    displayTZ: DstTzInfo = timezone(
         config["displayTZ"]
     )  # list of timezones - print(pytz.all_timezones)
     thresholdHours = config[
@@ -67,8 +72,8 @@ def main():
     rotateAngle = config[
         "rotateAngle"
     ]  # If image is rendered in portrait orientation, angle to rotate to fit screen
-    calendars: List[str] = config["calendars"]  # Google calendar ids
-
+    # calendars: List[str] = config["calendars"]  # Google calendar ids
+    accounts: List[Any] = config["accounts"]  # Google accounts to authenticate
 
     # Create and configure logger
     logging.basicConfig(
@@ -102,18 +107,34 @@ def main():
         )
 
         start: dt.datetime = dt.datetime.now()
-        googleCalendar = GoogleCalendar()
 
-        # google_calendars: List[Calendar] = googleCalendar.list_calendars()
+        tasks: List[InkalTask] = []
+        events: List[InkalEvent] = []
+        for account in accounts:
+            calendars: List[Calendar] = config["accounts"][account]["calendars"]
+            google_auth = GoogleAuth()
+            calendar_service, task_service = google_auth.authenticate(account)
+            google_calendar = GoogleCalendar(calendar_service)
+            google_tasks = GoogleTasks(task_service)
 
-        events: List[Event] = googleCalendar.retrieve_events(
-            calendars=calendars,
-            startDatetime=calStartDatetime,
-            endDatetime=calEndDatetime,
-            localTZ=displayTZ,
-            thresholdHours=thresholdHours,
-        )
-        logger.info("Calendar events retrieved in " + str(dt.datetime.now() - start))
+            account_tasks: List[InkalTask] = google_tasks.retrieve_tasks(
+                calStartDatetime - dt.timedelta(weeks=3),
+                calEndDatetime,
+                displayTZ,
+                thresholdHours,
+            )
+
+            account_events: List[Event] = google_calendar.retrieve_events(
+                calendars=calendars,
+                startDatetime=calStartDatetime,
+                endDatetime=calEndDatetime,
+                localTZ=displayTZ,
+                thresholdHours=thresholdHours,
+            )
+            logger.info("Calendar events retrieved in " + str(dt.datetime.now() - start))
+
+            tasks.extend(account_tasks)
+            events.extend(account_events)
 
         render_data: DisplayData = {
             "batteryDisplayMode": batteryDisplayMode,
@@ -123,10 +144,11 @@ def main():
             "lastRefresh": currDatetime,
             "maxEventsPerDay": maxEventsPerDay,
             "today": currDate,
+            "tasks": tasks
         } 
 
         renderer = ChromeRenderer(imageWidth, imageHeight, rotateAngle)
-        black_image, red_image = renderer.render(render_data, events)
+        black_image, red_image = renderer.render(render_data)
 
         if isDisplayToScreen:
             from display.display import EInkDisplay
@@ -160,7 +182,6 @@ def main():
             import os
 
             os.system("sudo shutdown -h now")
-
 
 if __name__ == "__main__":
     main()

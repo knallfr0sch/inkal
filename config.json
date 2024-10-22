@@ -16,5 +16,20 @@
     "tanni.sandner@gmail.com",
     "teamsandner@gmail.com",
     "sebastian.witthus@gmail.com"
-  ]
+  ],
+  "accounts": {
+    "sebastian.sandner89@gmail.com": {
+      "calendars": [
+        "primary",
+        "tanni.sandner@gmail.com",
+        "teamsandner@gmail.com",
+        "sebastian.witthus@gmail.com"
+      ]
+    },
+    "teamsandner@gmail.com": {
+      "calendars": [
+        "primary"
+      ]
+    }
+  }    
 }

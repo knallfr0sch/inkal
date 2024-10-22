@@ -1,5 +1,8 @@
-from typing import List, Literal, TypedDict
+from typing import Any, List, Literal, TypedDict
 from datetime import datetime
+
+from gcal.inkal_event import InkalEvent
+from gcal.inkal_task import InkalTask
 
 
 class DisplayData(TypedDict):
@@ -9,7 +12,8 @@ class DisplayData(TypedDict):
     batteryDisplayMode: Literal[0, 1, 2]
     batteryLevel: int
     calStartDate: datetime
-    events: List[str]
+    events: List[InkalEvent]
     lastRefresh: datetime
     maxEventsPerDay: int
     today: datetime
+    tasks: List[InkalTask]

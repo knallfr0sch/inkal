@@ -24,6 +24,8 @@ import calendar
 
 
 from display_data import DisplayData
+from gcal.inkal_event import InkalEvent
+from gcal.inkal_task import InkalTask
 from render.html_generator import HtmlGenerator
 
 
@@ -38,14 +40,14 @@ class ChromeRenderer:
         self.html_generator = HtmlGenerator()
 
     
-    def render(self, data: DisplayData, events: List[Event]) -> Tuple[Image, Image]:
+    def render(self, data: DisplayData) -> Tuple[Image, Image]:
         # first setup list to represent the 4 weeks in our calendar
-        cal_list: List[List[Dict]] = []
-        for i in range(28):
+        cal_list: List[List[InkalEvent | InkalTask]] = []
+        for _ in range(28):
             cal_list.append([])
 
         # for each item in the eventList, add them to the relevant day in our calendar list
-        for event in events:
+        for event in data['events']:
             idx = self.get_day_in_cal(data['calStartDate'], event['startDatetime'].date())
             if idx >= 0 and idx < len(cal_list):
                 cal_list[idx].append(event)
@@ -53,6 +55,11 @@ class ChromeRenderer:
                 idx = self.get_day_in_cal(data['calStartDate'], event['endDatetime'].date())
                 if idx < len(cal_list):
                     cal_list[idx].append(event)
+
+        for task in data['tasks']:
+            idx = self.get_day_in_cal(data['calStartDate'], task['due'])
+            if idx >= 0 and idx < len(cal_list):
+                cal_list[idx].append(task)
 
         # Read html template
         with open(self.currPath + '/calendar_template.html', 'r') as file:

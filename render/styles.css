@@ -92,6 +92,10 @@ body {
 
 /* ================
 Calendar Styling */
+.weekday {
+  margin-bottom: 25px;
+}
+
 .calendar {
   border-radius: 0px;
 }

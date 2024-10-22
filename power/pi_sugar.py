@@ -46,13 +46,16 @@ class PiSugar:
         Synchronise with PiSugar time
         """
         
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.connect(("127.0.0.1", pi_sugar_tcp_port))
-                sock.sendall(b"rtc_rtc2pi")
-                sock.recv(1024)
-        except socket.error as e:
-            self.logger.info(f"Socket error: {e}")
+        if socket.gethostname() == "raspberrypizero":
+            try:
+
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    sock.connect(("127.0.0.1", pi_sugar_tcp_port))
+                    sock.sendall(b"rtc_rtc2pi")
+                    sock.recv(1024)
+            except socket.error as e:
+                self.logger.info(f"Socket error: {e}")
+                return
       
 if __name__ == "__main__":
     print(PiSugar().get_battery())

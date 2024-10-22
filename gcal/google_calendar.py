@@ -1,14 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-This is where we retrieve events from the Google Calendar. Before doing so, make sure you have both the
-credentials.json and token.pickle in the same folder as this file. If not, run quickstart.py first.
-"""
 
 from __future__ import print_function
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from googleapiclient.discovery import build
 from typing import List
 from typings_google_calendar_api.calendars import Calendar
 from typings_google_calendar_api.events import Event as GoogleEvent
@@ -17,44 +10,18 @@ from pytz.tzinfo import DstTzInfo
 
 import datetime as dt
 import logging
-import os.path
-import pathlib
-import pickle
 
-from gcal.event import InkalEvent
+from gcal.inkal_event import InkalEvent
 
 
 class GoogleCalendar:
+    """
+    Google Calendar API
+    """
 
-    def __init__(self):
+    def __init__(self, calendar_service):
         self.logger = logging.getLogger("maginkcal")
-        # Initialise the Google Calendar using the provided credentials and token
-        SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
-        self.currPath = str(pathlib.Path(__file__).parent.absolute())
-
-        creds = None
-        # The file token.pickle stores the user's access and refresh tokens, and is
-        # created automatically when the authorization flow completes for the first
-        # time.
-        if os.path.exists(self.currPath + "/token.pickle"):
-            with open(self.currPath + "/token.pickle", "rb") as token:
-                creds = pickle.load(token)
-        # If there are no (valid) credentials available, let the user log in.
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    self.currPath + "/credentials.json", SCOPES
-                )
-                creds = flow.run_local_server(port=0)
-            # Save the credentials for the next run
-            with open(self.currPath + "/token.pickle", "wb") as token:
-                pickle.dump(creds, token)
-
-        self.googleApi = build(
-            "calendar", "v3", credentials=creds, cache_discovery=False
-        )
+        self.calendar_service = calendar_service
 
     def list_calendars(self) -> List[Calendar]:
         """
@@ -62,7 +29,7 @@ class GoogleCalendar:
         """
 
         self.logger.info("Getting list of calendars")
-        calendars_result = self.googleApi.calendarList().list().execute()
+        calendars_result = self.calendar_service.calendarList().list().execute()
         calendars: List[Calendar] = calendars_result.get("items", [])
         if not calendars:
             self.logger.info("No calendars found.")
@@ -76,7 +43,7 @@ class GoogleCalendar:
     
     def retrieve_events(
         self,
-        calendars: List[Calendar],
+        calendars: List[str],
         startDatetime: dt.datetime,
         endDatetime: dt.datetime,
         localTZ: DstTzInfo,
@@ -97,7 +64,7 @@ class GoogleCalendar:
         # Call the Calendar API
         google_events: List[GoogleEvent] = []
         for cal in calendars:
-            event_list: List[GoogleEvent] = self.googleApi.events().list(
+            event_list: List[GoogleEvent] = self.calendar_service.events().list(
                 calendarId=cal,
                 timeMin=minTimeStr,
                 timeMax=maxTimeStr,
@@ -125,6 +92,9 @@ class GoogleCalendar:
         Convert a Google Event to an InkalEvent
         """
         inkal_event: InkalEvent = {}
+
+        inkal_event["kind"] = "calendar#event"
+
         inkal_event["summary"] = google_event["summary"]
 
         if google_event["start"].get("dateTime") is None:

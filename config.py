@@ -1,4 +1,4 @@
-from typing import List, Literal, TypedDict
+from typing import Any, List, Literal, TypedDict
 import pytz
 
 
@@ -8,7 +8,7 @@ class Config(TypedDict):
     """
     
     batteryDisplayMode: Literal[0, 1, 2]
-    calendars: List[str]
+    accounts: List[Any]
     displayTZ: pytz.timezone
     imageHeight: int
     imageWidth: int
