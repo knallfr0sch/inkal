@@ -11,6 +11,7 @@ calendar and refreshing of the eInk display. In the future, I might choose to ge
 RPi device, while using a ESP32 or PiZero purely to just retrieve the image from a file host and update the screen.
 """
 
+import os
 import PIL
 from PIL.Image import Image
 import subprocess
@@ -41,6 +42,10 @@ class ChromeRenderer:
 
     
     def render(self, data: DisplayData) -> Tuple[Image, Image]:
+        """
+        Writes calendar.png and extracts [black, red] images
+        """
+
         # first setup list to represent the 4 weeks in our calendar
         cal_list: List[List[InkalEvent | InkalTask]] = []
         for _ in range(28):
@@ -77,7 +82,7 @@ class ChromeRenderer:
             month=month_name,
             battText=battery_text,
             grid=grid,
-            time=dt.datetime.now().strftime('%H:%M')
+            # time=dt.datetime.now().strftime('%H:%M')
         ))
         htmlFile.close()
         htmlFileUri = 'file://' + self.currPath + '/calendar.html'
@@ -99,8 +104,8 @@ class ChromeRenderer:
         black_img = PIL.Image.open(png_path)
         black_pixels = black_img.load()
 
-        for i in range(red_img.size[0]):  # loop through every pixel in the image
-            for j in range(red_img.size[1]): # since both bitmaps are identical, cycle only once and not both bitmaps
+        for i in range(red_img.size[0]):
+            for j in range(red_img.size[1]):  # loop through every pixel in the image
                 if red_pixels[i, j][0] <= red_pixels[i, j][1] and red_pixels[i, j][0] <= red_pixels[i, j][2]:  # if is not red
                     red_pixels[i, j] = (255, 255, 255)  # change it to white in the red image bitmap
 
@@ -109,6 +114,13 @@ class ChromeRenderer:
 
         red_img: Image = red_img.rotate(self.rotateAngle, expand=True)
         black_img: Image = black_img.rotate(self.rotateAngle, expand=True)
+
+        # Extract directory from png_path
+        directory = os.path.dirname(png_path)
+
+        # Save images next to the original png_path
+        red_img.save(os.path.join(directory, 'red_image.png'))
+        black_img.save(os.path.join(directory, 'black_image.png'))
 
         self.logger.info('Image colours processed. Extracted grayscale and red images.')
         return black_img, red_img

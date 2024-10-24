@@ -26,7 +26,7 @@ class HtmlGenerator:
         grid = DIV(
             self.get_week_days(),
             self.get_events(cal_list, data),
-            *self.get_divider(),
+            *self.get_dividers(),
             style="""
                 display: grid;
                 position: relative;
@@ -124,30 +124,37 @@ class HtmlGenerator:
         elif currDate.month != today.month:
             event_classes.append('text-muted')
         
-        time_div = None
+        # Multiday events
         if event['isMultiday']:
             if event['startDatetime'].date() == currDate:
-                event_text = '►' + event['summary']
+                prefix = '►'
             else:
-                event_text = '◄' + event['summary']
+                prefix = '◄'
+            prefix_html = DIV(prefix, _class='event-prefix')
+        
+            return DIV(
+                prefix_html,
+                event['summary'],
+                _class=' '.join(event_classes)
+            )
+        
+        # All day events
         elif event['allday']:
-            event_text = event['summary']
+            return DIV(
+                DIV('', _class='event-prefix'),
+                event['summary'],
+                _class=' '.join(event_classes)
+            )
+        
+        # Events with time
         else:
             time_div = self.get_time_element(event['startDatetime'])
-            event_text = event['summary']
-        
-        if (time_div is not None):
-            event_div = DIV(
+            return DIV(
                 time_div,
-                event_text,
+                event['summary'],
                 _class=' '.join(event_classes)
             )
-        else:
-            event_div = DIV(
-                event_text,
-                _class=' '.join(event_classes)
-            )
-        return event_div
+
     
     def get_task_html(self, task: InkalTask, currDate: dt.datetime, today: dt.datetime) -> HTMLElement:
         task_classes = ['task']
@@ -156,14 +163,25 @@ class HtmlGenerator:
             task_classes.append('text-danger')
         elif currDate.month != today.month:
             task_classes.append('text-muted')
+
+        prefix = None
+        if task['isCompleted']:
+            prefix = '✓'
+            task_classes.append('completed')
+        else:
+            prefix = '🛠'
         
         task_div = DIV(
+            DIV(
+                prefix,
+                _class='task-prefix'
+            ),
             task['title'],
             _class=' '.join(task_classes)
         )
         return task_div
     
-    def get_divider(self) -> List[HTMLElement]:
+    def get_dividers(self) -> List[HTMLElement]:
         return [
             DIV(
                 str(""),

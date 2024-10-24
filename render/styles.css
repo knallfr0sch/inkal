@@ -31,22 +31,12 @@
     text-align: center!important;
 }
 
-.list-unstyled {
-    padding-left: 0;
-    list-style: none;
-}
-
 .font-weight-bold {
     font-weight: 700!important;
 }
 
 .text-muted {
     color: #6c757d!important;
-}
-
-dl, ol, ul {
-    margin-top: 0;
-    margin-bottom: 1rem;
 }
 
 body {
@@ -82,13 +72,6 @@ body {
 *, ::after, ::before {
     box-sizing: border-box;
 }
-.calendar ol::after {
-  content: ".";
-  display: block;
-  height: 0;
-  clear: both;
-  visibility: hidden;
-}
 
 /* ================
 Calendar Styling */
@@ -100,12 +83,16 @@ Calendar Styling */
   border-radius: 0px;
 }
 
-.days {
-  min-height: 90px;
+.task {
+  display: flex;
+
+  &.completed{
+    text-decoration: line-through;
+  }
 }
 
-.ol {
-  list-style-type: none;
+.days {
+  min-height: 90px;
 }
 
 .past > * {
@@ -124,9 +111,17 @@ Calendar Styling */
 
 .time {
   display: flex;
-  margin-right: 8px;
-  min-width: 32px;
   justify-content: flex-end;
+  
+  min-width: 32px;
+  margin-right: 8px;
+}
+
+.event-prefix,
+.task-prefix {
+  min-width: 32px;
+  margin-right: 8px;
+  font-family: monospace;
 }
 
 .grid__item {
@@ -144,31 +139,11 @@ Calendar Styling */
   font-family: "Quattrocento-Regular";
 }
 
-
-.calendar ol li {
-  float: left;
-  width: 14.28571%;
-}
-
 .calendar .day-names {
   font-size: 2.5rem;
   font-family: "Quattrocento-Regular";
 }
 
-.calendar .day-names li {
-  margin-top: 1rem;
-  margin-bottom: 2rem;
-}
-
-.calendar .days li {
-  /* min-height: 12rem; */
-  min-height: 11.5rem;
-}
-
-.calendar .days li .date {
-  margin: 0.5rem 0;
-  line-height: 1.0;
-}
 
 .calendar .date {
   text-align: center;
@@ -195,45 +170,8 @@ Calendar Styling */
     background:#ff0000;
 }
 
-.calendar .days li .event {
-  font-size: 1rem;
-  /* font-weight: bold;*/
-  padding: 0.1rem;
-  /* color: black; */
-  /* font-family: "Judson-Regular";*/
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border-radius: 0rem;
-  margin-bottom: 1px;
-}
-
-.calendar .days li .event.span-2 {
-  width: 200%;
-}
-
 .text-multiday {
   text-overflow: '...」'!important;
-}
-
-.calendar .days li .event.begin {
-  border-radius: 1rem 0 0 1rem;
-}
-
-.calendar .days li .event.end {
-  border-radius: 0 1rem 1rem 0;
-}
-
-.calendar .days li .event.clear {
-  background: none;
-}
-
-.calendar .days li:nth-child(n+29) {
-  border-bottom: none;
-}
-
-.calendar .days li.outside .date {
-  color: #ddd;
 }
 
 div.batt_container {
