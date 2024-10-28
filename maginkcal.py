@@ -164,7 +164,7 @@ def main():
             # if currDate.weekday() == 0:
             #     # calibrate display once a week to prevent ghosting
             #     eInkDisplay.calibrate(cycles=0)  # to calibrate in production
-            eInkDisplay.display(Blackimage2, Redimage2)
+            eInkDisplay.display(black_image, red_image)
             # eInkDisplay.sleep()
 
         battery_level = pi_sugar.get_battery()
