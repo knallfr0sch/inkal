@@ -151,6 +151,7 @@ def main():
         black_image, red_image = renderer.render(render_data)
 
         if isDisplayToScreen:
+
             from display.display import EInkDisplay
 
             eInkDisplay = EInkDisplay(screenWidth, screenHeight)
