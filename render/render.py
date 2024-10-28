@@ -16,14 +16,12 @@ import time
 import PIL
 from PIL.Image import Image
 import subprocess
-from typing import Any, Dict, List, Tuple
-from typings_google_calendar_api.events import Event
+from typing import List, Tuple
 
 import datetime as dt
 import logging
 import pathlib
 import calendar
-import numpy as np
 from PIL import Image
 
 from display_data import DisplayData
