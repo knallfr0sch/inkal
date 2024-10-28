@@ -12,17 +12,19 @@ RPi device, while using a ESP32 or PiZero purely to just retrieve the image from
 """
 
 import os
+import time
 import PIL
 from PIL.Image import Image
 import subprocess
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 from typings_google_calendar_api.events import Event
 
 import datetime as dt
 import logging
 import pathlib
 import calendar
-
+import numpy as np
+from PIL import Image
 
 from display_data import DisplayData
 from gcal.inkal_event import InkalEvent
@@ -104,16 +106,28 @@ class ChromeRenderer:
         black_img = PIL.Image.open(png_path)
         black_pixels = black_img.load()
 
-        for i in range(red_img.size[0]):
-            for j in range(red_img.size[1]):  # loop through every pixel in the image
-                if red_pixels[i, j][0] <= red_pixels[i, j][1] and red_pixels[i, j][0] <= red_pixels[i, j][2]:  # if is not red
+        # Loop through every pixel in the image
+        start = time.perf_counter()
+        for i in range(red_img.size[0]):  # loop through every pixel in the image
+            for j in range(red_img.size[1]): # since both bitmaps are identical, cycle only once and not both bitmaps
+                red_value = red_pixels[i, j][0]
+                green_value = red_pixels[i, j][1]
+                blue_value = red_pixels[i, j][2]
+
+                if red_value <= green_value and red_value <= blue_value:  # if is not red
                     red_pixels[i, j] = (255, 255, 255)  # change it to white in the red image bitmap
 
-                elif black_pixels[i, j][0] > black_pixels[i, j][1] and black_pixels[i, j][0] > black_pixels[i, j][2]:  # if is red
+                    black_img_red_value = black_pixels[i, j][0]
+                    black_img_green_value = black_pixels[i, j][1]
+                    black_img_blue_value = black_pixels[i, j][2]
+
+                elif black_img_red_value > black_img_green_value and black_img_red_value > black_img_blue_value:  # if is red
                     black_pixels[i, j] = (255, 255, 255)  # change to white in the black image bitmap
 
-        red_img: Image = red_img.rotate(self.rotateAngle, expand=True)
-        black_img: Image = black_img.rotate(self.rotateAngle, expand=True)
+        end = time.perf_counter()
+        self.logger.info(f'Processed image in {end - start:0.4f} seconds.')
+        # red_img: Image = red_img.rotate(self.rotateAngle, expand=True)
+        # black_img: Image = black_img.rotate(self.rotateAngle, expand=True)
 
         # Extract directory from png_path
         directory = os.path.dirname(png_path)

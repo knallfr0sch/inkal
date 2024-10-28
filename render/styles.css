@@ -8,10 +8,10 @@
 .clearfix::after,
 
 :root {
-    --red: #dc3545;
+    --red: #ff0000 ;
     --white: #fff;
-    --gray: #6c757d;
-    --gray-dark: #343a40;
+    --gray: #7f7f7f;
+    --black: #000;
 }
 
 .text-uppercase {
@@ -36,7 +36,7 @@
 }
 
 .text-muted {
-    color: #6c757d!important;
+    color: var(--gray);
 }
 
 body {
@@ -45,9 +45,9 @@ body {
     font-size: 1rem;
     font-weight: 400;
     line-height: 1.5;
-    color: #212529;
+    color: var(--black);
     text-align: left;
-    background-color: #fff;
+    background-color: var(--white);
 }
 
 @font-face {
@@ -100,7 +100,7 @@ Calendar Styling */
 }
 
 .future > * {
-  color: grey;
+  color: var(--gray);
   font-weight: unset !important;
 }
 
@@ -136,12 +136,12 @@ Calendar Styling */
 .month {
   font-size: 7rem;
   line-height: 7rem;
-  font-family: "Quattrocento-Regular";
+  /* font-family: "Quattrocento-Regular"; */
 }
 
 .calendar .day-names {
   font-size: 2.5rem;
-  font-family: "Quattrocento-Regular";
+  /* font-family: "Quattrocento-Regular"; */
 }
 
 
@@ -149,7 +149,7 @@ Calendar Styling */
   text-align: center;
   font-size: 3rem;
   font-weight: bold;
-  font-family: "Quattrocento-Regular";
+  /* font-family: "Quattrocento-Regular"; */
 }
 
 .datecirclebox {
@@ -161,13 +161,13 @@ Calendar Styling */
     width:4rem;
     height:4rem;
     border-radius:2rem;
-    font-family: "Quattrocento-Regular";
+    /* font-family: "Quattrocento-Regular"; */
     font-size:3rem;
-    color:white;
+    color: var(--white);
     line-height: 4rem;
     text-align:center;
     vertical-align: middle;
-    background:#ff0000;
+    background: var(--red);
 }
 
 .text-multiday {
@@ -230,5 +230,5 @@ div.batt_container .batteryHide {
 */
 body {
   min-height: 100vh;
-  background-color: #ffffff;
+  background-color: var(--white);
 }
