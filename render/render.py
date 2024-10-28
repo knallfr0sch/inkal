@@ -117,11 +117,11 @@ class ChromeRenderer:
                 if red_value <= green_value and red_value <= blue_value:  # if is not red
                     red_pixels[i, j] = (255, 255, 255)  # change it to white in the red image bitmap
 
-                    black_img_red_value = black_pixels[i, j][0]
-                    black_img_green_value = black_pixels[i, j][1]
-                    black_img_blue_value = black_pixels[i, j][2]
+                    red_value = black_pixels[i, j][0]
+                    green_value = black_pixels[i, j][1]
+                    blue_value = black_pixels[i, j][2]
 
-                elif black_img_red_value > black_img_green_value and black_img_red_value > black_img_blue_value:  # if is red
+                elif red_value > green_value and red_value > blue_value:  # if is red
                     black_pixels[i, j] = (255, 255, 255)  # change to white in the black image bitmap
 
         end = time.perf_counter()
