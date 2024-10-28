@@ -30,6 +30,9 @@ import json
 import logging
 import sys
 
+from PIL import Image
+
+
 
 def main():
     # Basic configuration settings (user replaceable)
@@ -155,10 +158,13 @@ def main():
             from display.display import EInkDisplay
 
             eInkDisplay = EInkDisplay(screenWidth, screenHeight)
+
+            Blackimage2 = Image.new("1", (1304, 984), 255)
+            Redimage2 = Image.new("1", (1304, 984), 255)
             # if currDate.weekday() == 0:
             #     # calibrate display once a week to prevent ghosting
             #     eInkDisplay.calibrate(cycles=0)  # to calibrate in production
-            eInkDisplay.display(black_image, red_image)
+            eInkDisplay.display(Blackimage2, Redimage2)
             # eInkDisplay.sleep()
 
         battery_level = pi_sugar.get_battery()
