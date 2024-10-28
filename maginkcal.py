@@ -155,11 +155,11 @@ def main():
             from display.display import EInkDisplay
 
             eInkDisplay = EInkDisplay(screenWidth, screenHeight)
-            if currDate.weekday() == 0:
-                # calibrate display once a week to prevent ghosting
-                eInkDisplay.calibrate(cycles=0)  # to calibrate in production
-            eInkDisplay.update(black_image, red_image)
-            eInkDisplay.sleep()
+            # if currDate.weekday() == 0:
+            #     # calibrate display once a week to prevent ghosting
+            #     eInkDisplay.calibrate(cycles=0)  # to calibrate in production
+            eInkDisplay.display(black_image, red_image)
+            # eInkDisplay.sleep()
 
         battery_level = pi_sugar.get_battery()
         logger.info("Battery level at end: {:.3f}".format(battery_level))

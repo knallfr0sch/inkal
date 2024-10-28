@@ -19,12 +19,12 @@ class EInkDisplay:
         self.epd = eink.EPD()
         self.epd.Init()
 
-    def update(self, black_image: Image.Image, red_image: Image.Image):
+    def display(self, black_image: Image.Image, red_image: Image.Image):
         # Updates the display with the grayscale and red images
         # start displaying on eink display
         # self.epd.clear()
         self.epd.display(black_image, red_image)
-        self.logger.info('E-Ink display update complete.')
+        self.logger.info('Showing image on E-Ink display.')
 
     def calibrate(self, cycles=1):
         # Calibrates the display to prevent ghosting
