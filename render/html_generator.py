@@ -79,7 +79,7 @@ class HtmlGenerator:
             else:
                 classes = "date"
 
-            if currDate.day < today.day and currDate.month <= today.month:
+            if currDate.day < today.day and currDate.month <= today.month and currDate.year <= today.year:
                 day_class = "past"
             elif today + dt.timedelta(days=14) <= currDate:
                 day_class = "future"
