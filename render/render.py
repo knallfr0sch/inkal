@@ -95,7 +95,8 @@ class ChromeRenderer:
         """This function captures a screenshot of the calendar,
         processes the image to extract the grayscale and red"""
 
-        png_path = self.chrome_render_calendar_png(htmlFile)
+        # png_path = self.chrome_render_calendar_png(htmlFile)
+        png_path = self.firefox_render_calendar_png(htmlFile)
 
         self.logger.info('Screenshot captured and saved to file.')
 
@@ -149,7 +150,18 @@ class ChromeRenderer:
             f'--screenshot={png_path}',
             '--force-device-scale-factor=1'# Render correctly on displays smaller than image size
         ], check=True)
-        return png_path    
+        return png_path
+    
+    def firefox_render_calendar_png(self, htmlFile: str) -> str:
+        png_path = self.currPath + '/calendar.png'
+        subprocess.run([
+            'firefox',
+            '--headless',  # Run in headless mode (no GUI)
+            f'--window-size={self.imageWidth},{self.imageHeight}',  # Set the window size
+            '--screenshot', png_path,  # Take a screenshot and save it to the specified path
+            htmlFile  # Path to the HTML file
+        ], check=True)
+        return png_path
 
     def get_day_in_cal(self, startDate: dt.datetime, eventDate: dt.datetime) -> int:
         """
