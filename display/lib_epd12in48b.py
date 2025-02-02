@@ -32,6 +32,7 @@ import display.epdconfig as epdconfig
 
 EPD_WIDTH       = 1304
 EPD_HEIGHT      = 984
+BUSY_TIMEOUT_MS = 500
 
 class EPD(object):
     def __init__(self):
@@ -411,7 +412,7 @@ class EPD(object):
             self.M1_SendCommand(0x71) 
             busy = epdconfig.digital_read(self.EPD_M1_BUSY_PIN) 
             busy = not(busy & 0x01) 
-            if iter > 200:
+            if iter > BUSY_TIMEOUT_MS:
                 print("Forced e-paper busy release")
                 break
         time.sleep(0.2)
@@ -426,7 +427,7 @@ class EPD(object):
             self.M2_SendCommand(0x71) 
             busy = epdconfig.digital_read(self.EPD_M2_BUSY_PIN) 
             busy =not(busy & 0x01)
-            if iter > 200:
+            if iter > BUSY_TIMEOUT_MS:
                 print("Forced e-paper busy release")
                 break
         time.sleep(0.2)
@@ -440,7 +441,7 @@ class EPD(object):
             self.S1_SendCommand(0x71) 
             busy = epdconfig.digital_read(self.EPD_S1_BUSY_PIN) 
             busy = not(busy & 0x01)
-            if iter > 200:
+            if iter > BUSY_TIMEOUT_MS:
                 print("Forced e-paper busy release")
                 break
         time.sleep(0.2)        
@@ -454,7 +455,7 @@ class EPD(object):
             self.S2_SendCommand(0x71) 
             busy = epdconfig.digital_read(self.EPD_S2_BUSY_PIN) 
             busy = not(busy & 0x01) 
-            if iter > 200:
+            if iter > BUSY_TIMEOUT_MS:
                 print("Forced e-paper busy release")
                 break
         time.sleep(0.2)            
