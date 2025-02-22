@@ -29,9 +29,12 @@ import datetime as dt
 import json
 import logging
 import sys
+import os
+
 
 from PIL import Image
 
+image_dir = '/home/pi/inkal/render'
 
 
 def main():
@@ -51,9 +54,6 @@ def main():
     maxEventsPerDay = config[
         "maxEventsPerDay"
     ]  # limits number of events to display (remainder displayed as '+X more')
-    isDisplayToScreen = config[
-        "isDisplayToScreen"
-    ]  # set to true when debugging rendering without displaying to screen
     isShutdownOnComplete = config[
         "isShutdownOnComplete"
     ]  # set to true to conserve power, false if in debugging mode
@@ -78,6 +78,9 @@ def main():
     # calendars: List[str] = config["calendars"]  # Google calendar ids
     accounts: List[Any] = config["accounts"]  # Google accounts to authenticate
 
+    is_client = config["is_client"]
+    is_server = not is_client
+
     # Create and configure logger
     logging.basicConfig(
         filename="logfile.log",
@@ -90,88 +93,95 @@ def main():
     logger.info("Starting daily calendar update")
 
     try:
-        pi_sugar = PiSugar()
-        pi_sugar.sync_time()
-        battery_level: float = pi_sugar.get_battery()
-        logger.info("Battery level at start: {:.3f}".format(battery_level))
-
-        currDatetime = dt.datetime.now(displayTZ)
-        logger.info("Time synchronised to {}".format(currDatetime))
-        currDate = currDatetime.date()
-        calStartDate = currDate - dt.timedelta(
-            days=(currDate.weekday() % 7)
-        )
-        calEndDate = calStartDate + dt.timedelta(days=(4 * 7 - 1))
-        calStartDatetime = displayTZ.localize(
-            dt.datetime.combine(calStartDate, dt.datetime.min.time())
-        )
-        calEndDatetime = displayTZ.localize(
-            dt.datetime.combine(calEndDate, dt.datetime.max.time())
-        )
-
-        start: dt.datetime = dt.datetime.now()
-
-        tasks: List[InkalTask] = []
-        events: List[InkalEvent] = []
-        for account in accounts:
-            calendars: List[Calendar] = config["accounts"][account]["calendars"]
-            google_auth = GoogleAuth()
-            calendar_service, task_service = google_auth.authenticate(account)
-            google_calendar = GoogleCalendar(calendar_service)
-            google_tasks = GoogleTasks(task_service)
-
-            account_tasks: List[InkalTask] = google_tasks.retrieve_tasks(
-                calStartDatetime - dt.timedelta(weeks=3),
-                calEndDatetime,
-                displayTZ,
-                thresholdHours,
-            )
-
-            account_events: List[Event] = google_calendar.retrieve_events(
-                calendars=calendars,
-                startDatetime=calStartDatetime,
-                endDatetime=calEndDatetime,
-                localTZ=displayTZ,
-                thresholdHours=thresholdHours,
-            )
-            logger.info("Calendar events retrieved in " + str(dt.datetime.now() - start))
-
-            tasks.extend(account_tasks)
-            events.extend(account_events)
-
-        render_data: DisplayData = {
-            "batteryDisplayMode": batteryDisplayMode,
-            "batteryLevel": battery_level,
-            "calStartDate": calStartDate,
-            "events": events,
-            "lastRefresh": currDatetime,
-            "maxEventsPerDay": maxEventsPerDay,
-            "today": currDate,
-            "tasks": tasks
-        } 
-
-        renderer = ChromeRenderer(imageWidth, imageHeight, rotateAngle)
-        black_image, red_image = renderer.render(render_data)
-
-        if isDisplayToScreen:
-
-            from display.display import EInkDisplay
-
-            eInkDisplay = EInkDisplay(screenWidth, screenHeight)
-
-            Blackimage2 = Image.new("1", (1304, 984), 255)
-            Redimage2 = Image.new("1", (1304, 984), 255)
-            # if currDate.weekday() == 0:
-            #     # calibrate display once a week to prevent ghosting
-            #     eInkDisplay.calibrate(cycles=0)  # to calibrate in production
-            eInkDisplay.display(black_image, red_image)
-            # eInkDisplay.sleep()
-
-        battery_level = pi_sugar.get_battery()
-        logger.info("Battery level at end: {:.3f}".format(battery_level))
+        if (is_client):
+            sync_time(logger)
 
     except Exception as e:
         logger.error(e)
+
+    if is_server:
+        try:
+            currDatetime = dt.datetime.now(displayTZ)
+
+            currDate = currDatetime.date()
+            calStartDate = currDate - dt.timedelta(
+                days=(currDate.weekday() % 7)
+            )
+            calEndDate = calStartDate + dt.timedelta(days=(4 * 7 - 1))
+            calStartDatetime = displayTZ.localize(
+                dt.datetime.combine(calStartDate, dt.datetime.min.time())
+            )
+            calEndDatetime = displayTZ.localize(
+                dt.datetime.combine(calEndDate, dt.datetime.max.time())
+            )
+
+            start: dt.datetime = dt.datetime.now()
+
+            tasks: List[InkalTask] = []
+            events: List[InkalEvent] = []
+            for account in accounts:
+                calendars: List[Calendar] = config["accounts"][account]["calendars"]
+                google_auth = GoogleAuth()
+                calendar_service, task_service = google_auth.authenticate(account)
+                google_calendar = GoogleCalendar(calendar_service)
+                google_tasks = GoogleTasks(task_service)
+
+                account_tasks: List[InkalTask] = google_tasks.retrieve_tasks(
+                    calStartDatetime - dt.timedelta(weeks=3),
+                    calEndDatetime,
+                    displayTZ,
+                    thresholdHours,
+                )
+
+                account_events: List[Event] = google_calendar.retrieve_events(
+                    calendars=calendars,
+                    startDatetime=calStartDatetime,
+                    endDatetime=calEndDatetime,
+                    localTZ=displayTZ,
+                    thresholdHours=thresholdHours,
+                )
+                logger.info("Calendar events retrieved in " + str(dt.datetime.now() - start))
+
+                tasks.extend(account_tasks)
+                events.extend(account_events)
+
+            render_data: DisplayData = {
+                "batteryDisplayMode": batteryDisplayMode,
+                "batteryLevel": battery_level,
+                "calStartDate": calStartDate,
+                "events": events,
+                "lastRefresh": currDatetime,
+                "maxEventsPerDay": maxEventsPerDay,
+                "today": currDate,
+                "tasks": tasks
+            } 
+
+            renderer = ChromeRenderer(imageWidth, imageHeight, rotateAngle)
+            black_image, red_image = renderer.render(render_data)
+        except Exception as e:
+            logger.error(e)
+
+    if is_client:
+        copy_image()
+
+        from display.display import EInkDisplay
+
+        eInkDisplay = EInkDisplay(screenWidth, screenHeight)
+
+        red_image_path = os.path.join(image_dir, 'red_image.png')
+        black_image_path = os.path.join(image_dir, 'black_image.png')
+        red_image = Image.open(red_image_path)
+        black_image = Image.open(black_image_path)
+        # if currDate.weekday() == 0:
+        #     # calibrate display once a week to prevent ghosting
+        #     eInkDisplay.calibrate(cycles=0)  # to calibrate in production
+        eInkDisplay.display(black_image, red_image)
+        # eInkDisplay.sleep()
+
+        pi_sugar = PiSugar()
+        battery_level = pi_sugar.get_battery()
+        logger.info("Battery level at end: {:.3f}".format(battery_level))
+
 
     logger.info("Completed daily calendar update")
 
@@ -180,15 +190,25 @@ def main():
             currDatetime.hour
         )
     )
-    if isShutdownOnComplete:
-        # implementing a failsafe so that we don't shutdown when debugging
-        # checking if it's 6am in the morning, which is the time I've set PiSugar to wake and refresh the calendar
-        # if it is 6am, shutdown the RPi. if not 6am, assume I'm debugging the code, so do not shutdown
-        if currDatetime.hour == 6:
-            logger.info("Shutting down safely.")
-            import os
+    
+    if is_client:
+        logger.info("Shutting down safely.")
 
-            os.system("sudo shutdown -h now")
+    os.system("sudo shutdown -h now")
+
+def copy_image():
+    black_image_path = os.path.join(image_dir, 'black_image.png')
+    red_image_path = os.path.join(image_dir, 'red_image.png')
+    os.system(f"scp zero1:{black_image_path} {black_image_path}")
+    os.system(f"scp zero1:{red_image_path} {red_image_path}")
+
+def sync_time(logger: logging.Logger, displayTZ: DstTzInfo) -> None:
+    pi_sugar = PiSugar()
+    pi_sugar.sync_time()
+    battery_level: float = pi_sugar.get_battery()
+    logger.info("Battery level at start: {:.3f}".format(battery_level))
+    currDatetime = dt.datetime.now(displayTZ)
+    logger.info("Time synchronised to {}".format(currDatetime))
 
 if __name__ == "__main__":
     main()

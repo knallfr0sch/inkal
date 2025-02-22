@@ -4,7 +4,9 @@
 			"path": "."
 		}
 	],
-	"settings": {},
+	"settings": {
+		"window.zoomLevel": 1
+	},
 	"extensions": {
 		"recommendations": [
 			"github.copilot",
