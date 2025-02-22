@@ -187,14 +187,13 @@ def main():
 
     logger.info(
         "Checking if configured to shutdown safely - Current hour: {}".format(
-            currDatetime.hour
+            dt.datetime.now(displayTZ).hour
         )
     )
     
     if is_client:
         logger.info("Shutting down safely.")
-
-    os.system("sudo shutdown -h now")
+        os.system("sudo shutdown -h now")
 
 def copy_image():
     black_image_path = os.path.join(image_dir, 'black_image.png')
