@@ -91,7 +91,7 @@ def main():
 
     try:
         if (is_client):
-            sync_time(logger)
+            sync_time(logger, displayTZ)
 
     except Exception as e:
         logger.error(e)
