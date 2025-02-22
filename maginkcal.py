@@ -192,8 +192,8 @@ def main():
 def copy_image():
     black_image_path = os.path.join(image_dir, 'black_image.png')
     red_image_path = os.path.join(image_dir, 'red_image.png')
-    os.system(f"scp zero1:{black_image_path} {black_image_path}")
-    os.system(f"scp zero1:{red_image_path} {red_image_path}")
+    os.system(f"scp raspberrypizero:{black_image_path} {black_image_path}")
+    os.system(f"scp raspberrypizero:{red_image_path} {red_image_path}")
 
 def sync_time(logger: logging.Logger, displayTZ: DstTzInfo) -> None:
     pi_sugar = PiSugar()
