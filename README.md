@@ -1,3 +1,4 @@
+# Installation
 install poetry
 curl -sSL https://install.python-poetry.org | python3 -
 
@@ -11,14 +12,36 @@ reload
 install chromium
 
 
-server: 
+## server: 
  - every hour:
   - get events
   - render picture
 
-client:
+```
+
+```
+
+
+## client:
  - on boot:
    - scp image from server 
    - display image
    - set battery timer
    - shutdown
+
+```
+sudo nano /etc/systemd/system/maginkal.service
+sudo systemctl enable maginkal.service
+
+[Unit]
+Description=Runs Maginkcal
+After=network.target
+
+[Service]
+ExecStart=/home/pi/inkal/bash/startup.sh
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
+```
