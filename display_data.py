@@ -9,8 +9,6 @@ class DisplayData(TypedDict):
     """
     Data to be rendered on the E-Ink display.
     """
-    batteryDisplayMode: Literal[0, 1, 2]
-    batteryLevel: int
     calStartDate: datetime
     events: List[InkalEvent]
     lastRefresh: datetime

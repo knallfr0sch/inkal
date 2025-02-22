@@ -73,14 +73,12 @@ class ChromeRenderer:
         # Insert month header
         month_name = calendar.month_name[data['today'].month]
 
-        battery_text = self.html_generator.get_battery_text(data)
 
         grid = self.html_generator.get_grid_html(cal_list, data)
                     
         htmlFile = open(self.currPath + '/calendar.html', "w")
         htmlFile.write(calendar_template.format(
             month=month_name,
-            battText=battery_text,
             grid=grid,
             # time=dt.datetime.now().strftime('%H:%M')
         ))

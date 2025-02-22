@@ -57,9 +57,6 @@ def main():
     isShutdownOnComplete = config[
         "isShutdownOnComplete"
     ]  # set to true to conserve power, false if in debugging mode
-    batteryDisplayMode = config[
-        "batteryDisplayMode"
-    ]  # 0: do not show / 1: always show / 2: show when battery is low
     screenWidth = config[
         "screenWidth"
     ]  # Width of E-Ink display. Default is landscape. Need to rotate image to fit.
@@ -146,8 +143,6 @@ def main():
                 events.extend(account_events)
 
             render_data: DisplayData = {
-                "batteryDisplayMode": batteryDisplayMode,
-                "batteryLevel": battery_level,
                 "calStartDate": calStartDate,
                 "events": events,
                 "lastRefresh": currDatetime,
@@ -184,14 +179,13 @@ def main():
 
 
     logger.info("Completed daily calendar update")
-
-    logger.info(
-        "Checking if configured to shutdown safely - Current hour: {}".format(
-            dt.datetime.now(displayTZ).hour
-        )
-    )
     
     if is_client:
+        logger.info(
+            "Checking if configured to shutdown safely - Current hour: {}".format(
+                dt.datetime.now(displayTZ).hour
+            )
+        )
         logger.info("Shutting down safely.")
         os.system("sudo shutdown -h now")
 

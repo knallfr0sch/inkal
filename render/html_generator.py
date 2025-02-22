@@ -216,35 +216,7 @@ class HtmlGenerator:
                     left: 28%;
                 """
             ),
-        ]
-
-    def get_battery_text(self, data: DisplayData) -> BatteryText:
-        displayMode: Literal[0, 1, 2] = data['batteryDisplayMode']
-
-        # Insert battery icon
-        # batteryDisplayMode - 0: do not show / 1: always show / 2: show when battery is low
-        level = data['batteryLevel']
-        if displayMode == 0:
-            text = 'batteryHide'
-        elif displayMode == 1:
-            if level >= 80:
-                text = 'battery80'
-            elif level >= 60:
-                text = 'battery60'
-            elif level >= 40:
-                text = 'battery40'
-            elif level >= 20:
-                text = 'battery20'
-            else:
-                text = 'battery0'
-
-        elif displayMode == 2 and level < 20.0:
-            text = 'battery0'
-        elif displayMode == 2 and level >= 20.0:
-            text = 'batteryHide'
-
-        return text
-    
+        ]  
     
     def get_time_element(self, datetimeObj) -> HTMLElement:
         """
