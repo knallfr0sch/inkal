@@ -32,7 +32,7 @@ import display.epdconfig as epdconfig
 
 EPD_WIDTH       = 1304
 EPD_HEIGHT      = 984
-BUSY_TIMEOUT_MS = 500
+BUSY_TIMEOUT_MS = 200
 
 class EPD(object):
     def __init__(self):
