@@ -29,7 +29,7 @@ THE SOFTWARE.
 
 import time
 
-from display.epdconfig import epdconfig_12_in_48 as epdconfig
+from display.epdconfig import RaspberryPi as epdconfig
 
 
 EPD_WIDTH = 1304
