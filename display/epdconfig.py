@@ -1,153 +1,128 @@
-# /*****************************************************************************
-# * | File        :	  epdconfig.py
-# * | Author      :   Waveshare electrices
-# * | Function    :   Hardware underlying interface
-# * | Info        :
-# *----------------
-# * |	This version:   V1.0
-# * | Date        :   2019-11-01
-# * | Info        :   
-# ******************************************************************************/
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documnetation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to  whom the Software is
-# furished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in
-# all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS OR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-# THE SOFTWARE.
-#
-import RPi.GPIO as GPIO
-import time
-import os
+"""
+* | File        :	  epdconfig.py
+* | Author      :   Waveshare team
+* | Function    :   Hardware underlying interface
+* | Info        :
+*----------------
+* | This version:   V1.2
+* | Date        :   2022-10-29
+* | Info        :
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to  whom the Software is
+furished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS OR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+"""
+
 import logging
 import sys
+import time
 
-from ctypes import *
-
-EPD_SCK_PIN   =11
-EPD_MOSI_PIN  =10
-
-EPD_M1_CS_PIN  =8
-EPD_S1_CS_PIN  =7
-EPD_M2_CS_PIN  =17
-EPD_S2_CS_PIN  =18
-
-EPD_M1S1_DC_PIN  =13
-EPD_M2S2_DC_PIN  =22
-
-EPD_M1S1_RST_PIN =6
-EPD_M2S2_RST_PIN =23
-
-EPD_M1_BUSY_PIN  =5
-EPD_S1_BUSY_PIN  =19
-EPD_M2_BUSY_PIN  =27
-EPD_S2_BUSY_PIN  =24
-
-find_dirs = [
-    os.path.dirname(os.path.realpath(__file__)),
-    '/usr/local/lib',
-    '/usr/lib',
-]
-spi = None
-for find_dir in find_dirs:
-    val = int(os.popen('getconf LONG_BIT').read())
-    logging.debug("System is %d bit"%val)
-    if val == 64:
-        so_filename = os.path.join(find_dir, 'DEV_Config_64.so')
-    else:
-        so_filename = os.path.join(find_dir, 'DEV_Config_32.so')
-    if os.path.exists(so_filename):
-        spi = CDLL(so_filename)
-        break
-if spi is None:
-    RuntimeError('Cannot find DEV_Config.so')
+logger = logging.getLogger(__name__)
 
 
-def digital_write(pin, value):
-    GPIO.output(pin, value)
+class RaspberryPi:
+    # Pin definition
+    RST_PIN = 17
+    DC_PIN = 25
+    CS_PIN = 8
+    BUSY_PIN = 24
+    PWR_PIN = 18
 
-def digital_read(pin):
-    return GPIO.input(pin)
+    def __init__(self):
+        import spidev
+        import gpiozero
 
-def spi_writebyte(value): 
-    spi.DEV_SPI_WriteByte(value)
- 
-def delay_ms(delaytime):
-    time.sleep(delaytime / 1000.0)
-        
-def module_init():
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
-    GPIO.setup(EPD_SCK_PIN, GPIO.OUT)    
-    GPIO.setup(EPD_MOSI_PIN, GPIO.OUT)
-    
-    logging.debug("python call bcm2835 Lib")
-    
-    GPIO.setup(EPD_M2S2_RST_PIN, GPIO.OUT)    
-    GPIO.setup(EPD_M1S1_RST_PIN, GPIO.OUT)
-    GPIO.setup(EPD_M2S2_DC_PIN, GPIO.OUT)
-    GPIO.setup(EPD_M1S1_DC_PIN, GPIO.OUT)
-    GPIO.setup(EPD_S1_CS_PIN, GPIO.OUT)
-    GPIO.setup(EPD_S2_CS_PIN, GPIO.OUT)
-    GPIO.setup(EPD_M1_CS_PIN, GPIO.OUT)
-    GPIO.setup(EPD_M2_CS_PIN, GPIO.OUT)
+        self.SPI = spidev.SpiDev()
+        self.GPIO_RST_PIN = gpiozero.LED(self.RST_PIN)
+        self.GPIO_DC_PIN = gpiozero.LED(self.DC_PIN)
+        # self.GPIO_CS_PIN     = gpiozero.LED(self.CS_PIN)
+        self.GPIO_PWR_PIN = gpiozero.LED(self.PWR_PIN)
+        self.GPIO_BUSY_PIN = gpiozero.Button(self.BUSY_PIN, pull_up=False)
 
-    GPIO.setup(EPD_S1_BUSY_PIN, GPIO.IN)
-    GPIO.setup(EPD_S2_BUSY_PIN, GPIO.IN)
-    GPIO.setup(EPD_M1_BUSY_PIN, GPIO.IN)
-    GPIO.setup(EPD_M2_BUSY_PIN, GPIO.IN)
-    
-    digital_write(EPD_M1_CS_PIN, 1)
-    digital_write(EPD_S1_CS_PIN, 1)
-    digital_write(EPD_M2_CS_PIN, 1)
-    digital_write(EPD_S2_CS_PIN, 1)
-    
-    digital_write(EPD_M2S2_RST_PIN, 0)
-    digital_write(EPD_M1S1_RST_PIN, 0)
-    digital_write(EPD_M2S2_DC_PIN, 1)
-    digital_write(EPD_M1S1_DC_PIN, 1)
+    def digital_write(self, pin, value):
+        if pin == self.RST_PIN:
+            if value:
+                self.GPIO_RST_PIN.on()
+            else:
+                self.GPIO_RST_PIN.off()
+        elif pin == self.DC_PIN:
+            if value:
+                self.GPIO_DC_PIN.on()
+            else:
+                self.GPIO_DC_PIN.off()
+        # elif pin == self.CS_PIN:
+        #     if value:
+        #         self.GPIO_CS_PIN.on()
+        #     else:
+        #         self.GPIO_CS_PIN.off()
+        elif pin == self.PWR_PIN:
+            if value:
+                self.GPIO_PWR_PIN.on()
+            else:
+                self.GPIO_PWR_PIN.off()
 
-    spi.DEV_ModuleInit()
+    def digital_read(self, pin):
+        if pin == self.BUSY_PIN:
+            return self.GPIO_BUSY_PIN.value
+        elif pin == self.RST_PIN:
+            return self.RST_PIN.value
+        elif pin == self.DC_PIN:
+            return self.DC_PIN.value
+        # elif pin == self.CS_PIN:
+        #     return self.CS_PIN.value
+        elif pin == self.PWR_PIN:
+            return self.PWR_PIN.value
 
-def module_exit():
-    digital_write(EPD_M2S2_RST_PIN, 0)
-    digital_write(EPD_M1S1_RST_PIN, 0)
-    digital_write(EPD_M2S2_DC_PIN, 0)
-    digital_write(EPD_M1S1_DC_PIN, 0)
-    digital_write(EPD_S1_CS_PIN, 1)
-    digital_write(EPD_S2_CS_PIN, 1)
-    digital_write(EPD_M1_CS_PIN, 1)
-    digital_write(EPD_M2_CS_PIN, 1)
+    def delay_ms(self, delaytime):
+        time.sleep(delaytime / 1000.0)
 
-def spi_readbyte(Reg):
-    GPIO.setup(EPD_MOSI_PIN, GPIO.IN)
-    j=0
-    # time.sleep(0.01)
-    for i in range(0, 8):
-        GPIO.output(EPD_SCK_PIN, GPIO.LOW) 
-        # time.sleep(0.01) 
-        j = j << 1 
-        if(GPIO.input(EPD_MOSI_PIN) == GPIO.HIGH):
-            j |= 0x01
-        else:
-            j &= 0xfe 
-        # time.sleep(0.01)
-        GPIO.output(EPD_SCK_PIN, GPIO.HIGH) 
-        # time.sleep(0.01)  
-    GPIO.setup(EPD_MOSI_PIN, GPIO.OUT)
-    return j 
-    
-def delay_ms(delaytime):
-    time.sleep(delaytime / 1000.0)
+    def spi_writebyte(self, data):
+        self.SPI.writebytes(data)
 
-  
+    def spi_writebyte2(self, data):
+        self.SPI.writebytes2(data)
+
+    def module_init(self):
+        self.GPIO_PWR_PIN.on()
+
+        # SPI device, bus = 0, device = 0
+        self.SPI.open(0, 0)
+        self.SPI.max_speed_hz = 4000000
+        self.SPI.mode = 0b00
+        return 0
+
+    def module_exit(self, cleanup=False):
+        logger.debug("spi end")
+        self.SPI.close()
+
+        self.GPIO_RST_PIN.off()
+        self.GPIO_DC_PIN.off()
+        self.GPIO_PWR_PIN.off()
+        logger.debug("close 5V, Module enters 0 power consumption ...")
+
+        if cleanup:
+            self.GPIO_RST_PIN.close()
+            self.GPIO_DC_PIN.close()
+            # self.GPIO_CS_PIN.close()
+            self.GPIO_PWR_PIN.close()
+            self.GPIO_BUSY_PIN.close()
+
+
+implementation = RaspberryPi()
+
+for func in [x for x in dir(implementation) if not x.startswith('_')]:
+    setattr(sys.modules[__name__], func, getattr(implementation, func))
