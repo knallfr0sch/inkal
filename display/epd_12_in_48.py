@@ -1,11 +1,11 @@
 """
-* | File        :	  epd_12_in_48_colour.py
-* | Author      :   Waveshare electrices, modified by Sebastien Harnist
+* | File        :	  epd12in48.py
+* | Author      :   Waveshare electrices
 * | Function    :   Hardware underlying interface
 * | Info        :
 *----------------
-* | This version:   V1.1
-* | Date        :   2022-11-23
+* |	This version:   V1.0
+* | Date        :   2019-11-01
 * | Info        :
 ******************************************************************************/
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,10 +26,9 @@ LIABILITY WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
-
 import time
 
-from inkycal.display.drivers import epdconfig_12_in_48 as epdconfig
+from display import epdconfig_12_in_48 as epdconfig
 
 EPD_WIDTH = 1304
 EPD_HEIGHT = 984
@@ -66,15 +65,15 @@ class EPD(object):
         epdconfig.digital_write(self.EPD_S2_CS_PIN, 1)
         self.Reset()
 
-        # panel setting for Display
+        # panel setting
         self.M1_SendCommand(0x00)
-        self.M1_SendData(0x0f)  # KW-3f   KWR-2F	BWROTP 0f	BWOTP 1f
+        self.M1_SendData(0x1f)  # KW-3f   KWR-2F	BWROTP 0f	BWOTP 1f
         self.S1_SendCommand(0x00)
-        self.S1_SendData(0x0f)
+        self.S1_SendData(0x1f)
         self.M2_SendCommand(0x00)
-        self.M2_SendData(0x03)
+        self.M2_SendData(0x13)
         self.S2_SendCommand(0x00)
-        self.S2_SendData(0x03)
+        self.S2_SendData(0x13)
 
         # booster soft start
         self.M1_SendCommand(0x06)
@@ -114,7 +113,7 @@ class EPD(object):
         self.M1S1M2S2_SendData(0x20)
 
         self.M1S1M2S2_SendCommand(0x50)  # Vcom and data interval setting
-        self.M1S1M2S2_SendData(0x11)
+        self.M1S1M2S2_SendData(0x21)  # Border KW
         self.M1S1M2S2_SendData(0x07)
 
         self.M1S1M2S2_SendCommand(0x60)  # TCON
@@ -123,9 +122,13 @@ class EPD(object):
         self.M1S1M2S2_SendCommand(0xE3)
         self.M1S1M2S2_SendData(0x00)
 
-        self.M1_ReadTemperature()
+        # temperature
+        temp = self.M1_ReadTemperature()
 
-        self.SetLut()
+        self.M1S1M2S2_SendCommand(0xe0)  # Cascade setting
+        self.M1S1M2S2_SendData(0x03)
+        self.M1S1M2S2_SendCommand(0xe5)  # Force temperature
+        self.M1S1M2S2_SendData(temp)
 
     def getbuffer(self, image):
         # logging.debug("bufsiz = ",int(self.width/8) * self.height)
@@ -149,119 +152,56 @@ class EPD(object):
                         buf[int((newx + newy * self.width) / 8)] &= ~(0x80 >> (y % 8))
         return buf
 
-    def display(self, blackbuf, redbuf):
-
-        # S2 part 648*492
-        self.S2_SendCommand(0x10)
-        for y in range(0, 492):
-            for x in range(0, 81):
-                self.S2_SendData(blackbuf[y * 163 + x])
-        self.S2_SendCommand(0x13)
-        for y in range(0, 492):
-            for x in range(0, 81):
-                self.S2_SendData(~redbuf[y * 163 + x])
-
-        # M2 part 656*492
-        self.M2_SendCommand(0x10)
-        for y in range(0, 492):
-            for x in range(81, 163):
-                self.M2_SendData(blackbuf[y * 163 + x])
-        self.M2_SendCommand(0x13)
-        for y in range(0, 492):
-            for x in range(81, 163):
-                self.M2_SendData(~redbuf[y * 163 + x])
+    def display(self, buf):
 
         # M1 part 648*492
-        self.M1_SendCommand(0x10)
-        for y in range(492, 984):
-            for x in range(0, 81):
-                self.M1_SendData(blackbuf[y * 163 + x])
         self.M1_SendCommand(0x13)
         for y in range(492, 984):
             for x in range(0, 81):
-                self.M1_SendData(~redbuf[y * 163 + x])
+                self.M1_SendData(buf[y * 163 + x])
 
         # S1 part 656*492
-        self.S1_SendCommand(0x10)
-        for y in range(492, 984):
-            for x in range(81, 163):
-                self.S1_SendData(blackbuf[y * 163 + x])
         self.S1_SendCommand(0x13)
         for y in range(492, 984):
             for x in range(81, 163):
-                self.S1_SendData(~redbuf[y * 163 + x])
+                self.S1_SendData(buf[y * 163 + x])
+
+        # M2 part 656*492
+        self.M2_SendCommand(0x13)
+        for y in range(0, 492):
+            for x in range(81, 163):
+                self.M2_SendData(buf[y * 163 + x])
+
+        # S2 part 648*492
+        self.S2_SendCommand(0x13)
+        for y in range(0, 492):
+            for x in range(0, 81):
+                self.S2_SendData(buf[y * 163 + x])
+
         self.TurnOnDisplay()
 
     def clear(self):
         """Clear contents of image buffer"""
-
-        self.S2_SendCommand(0x10)
-        for y in range(0, 492):
-            for x in range(0, 81):
-                self.S2_SendData(0xff)
-        self.S2_SendCommand(0x13)
-        for y in range(0, 492):
-            for x in range(0, 81):
-                self.S2_SendData(0x00)
-
-        self.M2_SendCommand(0x10)
-        for y in range(0, 492):
-            for x in range(81, 163):
-                self.M2_SendData(0xff)
-        self.M2_SendCommand(0x13)
-        for y in range(0, 492):
-            for x in range(81, 163):
-                self.M2_SendData(0x00)
-
-        self.M1_SendCommand(0x10)
-        for y in range(492, 984):
-            for x in range(0, 81):
-                self.M1_SendData(0xff)
         self.M1_SendCommand(0x13)
         for y in range(492, 984):
             for x in range(0, 81):
-                self.M1_SendData(0x00)
+                self.M1_SendData(0xff)
 
-        self.S1_SendCommand(0x10)
-        for y in range(492, 984):
-            for x in range(81, 163):
-                self.S1_SendData(0xff)
         self.S1_SendCommand(0x13)
         for y in range(492, 984):
             for x in range(81, 163):
-                self.S1_SendData(0x00)
+                self.S1_SendData(0xff)
 
+        self.M2_SendCommand(0x13)
+        for y in range(0, 492):
+            for x in range(81, 163):
+                self.M2_SendData(0xff)
+
+        self.S2_SendCommand(0x13)
+        for y in range(0, 492):
+            for x in range(0, 81):
+                self.S2_SendData(0xff)
         self.TurnOnDisplay()
-
-    def Reset(self):
-        epdconfig.digital_write(self.EPD_M1S1_RST_PIN, 1)
-        epdconfig.digital_write(self.EPD_M2S2_RST_PIN, 1)
-        time.sleep(0.2)
-        epdconfig.digital_write(self.EPD_M1S1_RST_PIN, 0)
-        epdconfig.digital_write(self.EPD_M2S2_RST_PIN, 0)
-        time.sleep(0.01)
-        epdconfig.digital_write(self.EPD_M1S1_RST_PIN, 1)
-        epdconfig.digital_write(self.EPD_M2S2_RST_PIN, 1)
-        time.sleep(0.2)
-
-    def sleep(self):
-        self.M1S1M2S2_SendCommand(0X02)
-        time.sleep(0.3)
-
-        self.M1S1M2S2_SendCommand(0X07)
-        self.M1S1M2S2_SendData(0xA5)
-        time.sleep(0.3)
-        print("module_exit")
-        epdconfig.module_exit()
-
-    def TurnOnDisplay(self):
-        self.M1M2_SendCommand(0x04)
-        time.sleep(0.3)
-        self.M1S1M2S2_SendCommand(0x12)
-        self.M1_ReadBusy()
-        self.S1_ReadBusy()
-        self.M2_ReadBusy()
-        self.S2_ReadBusy()
 
     """   M1S1M2S2 Write register address and data     """
 
@@ -304,7 +244,7 @@ class EPD(object):
         epdconfig.digital_write(self.EPD_M1_CS_PIN, 1)
         epdconfig.digital_write(self.EPD_M2_CS_PIN, 1)
 
-    def M1M2_Sendata(self, val):
+    def M1S1M2S2_Senddata(self, val):
         epdconfig.digital_write(self.EPD_M1S1_DC_PIN, 1)
         epdconfig.digital_write(self.EPD_M2S2_DC_PIN, 1)
         epdconfig.digital_write(self.EPD_M1_CS_PIN, 0)
@@ -369,11 +309,42 @@ class EPD(object):
         epdconfig.spi_writebyte(val)
         epdconfig.digital_write(self.EPD_M1_CS_PIN, 1)
 
+    def Reset(self):
+        epdconfig.digital_write(self.EPD_M1S1_RST_PIN, 1)
+        epdconfig.digital_write(self.EPD_M2S2_RST_PIN, 1)
+        time.sleep(0.2)
+        epdconfig.digital_write(self.EPD_M1S1_RST_PIN, 0)
+        epdconfig.digital_write(self.EPD_M2S2_RST_PIN, 0)
+        time.sleep(0.01)
+        epdconfig.digital_write(self.EPD_M1S1_RST_PIN, 1)
+        epdconfig.digital_write(self.EPD_M2S2_RST_PIN, 1)
+        time.sleep(0.2)
+
+    def sleep(self):
+        self.M1S1M2S2_SendCommand(0X02)
+        time.sleep(0.3)
+
+        self.M1S1M2S2_SendCommand(0X07)
+        self.M1S1M2S2_SendData(0xA5)
+        time.sleep(0.3)
+        print("module_exit")
+        epdconfig.module_exit()
+
+    def TurnOnDisplay(self):
+        self.M1M2_SendCommand(0x04)
+        time.sleep(0.3)
+        self.M1S1M2S2_SendCommand(0x12)
+        self.M1_ReadBusy()
+        self.S1_ReadBusy()
+        self.M2_ReadBusy()
+        self.S2_ReadBusy()
+
     # Busy
     def M1_ReadBusy(self):
         self.M1_SendCommand(0x71)
         busy = epdconfig.digital_read(self.EPD_M1_BUSY_PIN)
         busy = not (busy & 0x01)
+        print("M1_ReadBusy")
         while (busy):
             self.M1_SendCommand(0x71)
             busy = epdconfig.digital_read(self.EPD_M1_BUSY_PIN)
@@ -384,7 +355,7 @@ class EPD(object):
         self.M2_SendCommand(0x71)
         busy = epdconfig.digital_read(self.EPD_M2_BUSY_PIN)
         busy = not (busy & 0x01)
-        self.M2_SendCommand(0x71)
+        print("M2_ReadBusy")
         while (busy):
             self.M2_SendCommand(0x71)
             busy = epdconfig.digital_read(self.EPD_M2_BUSY_PIN)
@@ -395,6 +366,7 @@ class EPD(object):
         self.S1_SendCommand(0x71)
         busy = epdconfig.digital_read(self.EPD_S1_BUSY_PIN)
         busy = not (busy & 0x01)
+        print("s1_ReadBusy")
         while (busy):
             self.S1_SendCommand(0x71)
             busy = epdconfig.digital_read(self.EPD_S1_BUSY_PIN)
@@ -405,97 +377,12 @@ class EPD(object):
         self.S2_SendCommand(0x71)
         busy = epdconfig.digital_read(self.EPD_S2_BUSY_PIN)
         busy = not (busy & 0x01)
+        print("S2_ReadBusy")
         while (busy):
             self.S2_SendCommand(0x71)
             busy = epdconfig.digital_read(self.EPD_S2_BUSY_PIN)
             busy = not (busy & 0x01)
         time.sleep(0.2)
-
-    lut_vcom1 = [
-        0x00, 0x10, 0x10, 0x01, 0x08, 0x01,
-        0x00, 0x06, 0x01, 0x06, 0x01, 0x05,
-        0x00, 0x08, 0x01, 0x08, 0x01, 0x06,
-        0x00, 0x06, 0x01, 0x06, 0x01, 0x05,
-        0x00, 0x05, 0x01, 0x1E, 0x0F, 0x06,
-        0x00, 0x05, 0x01, 0x1E, 0x0F, 0x01,
-        0x00, 0x04, 0x05, 0x08, 0x08, 0x01,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    ]
-    lut_ww1 = [
-        0x91, 0x10, 0x10, 0x01, 0x08, 0x01,
-        0x04, 0x06, 0x01, 0x06, 0x01, 0x05,
-        0x84, 0x08, 0x01, 0x08, 0x01, 0x06,
-        0x80, 0x06, 0x01, 0x06, 0x01, 0x05,
-        0x00, 0x05, 0x01, 0x1E, 0x0F, 0x06,
-        0x00, 0x05, 0x01, 0x1E, 0x0F, 0x01,
-        0x08, 0x04, 0x05, 0x08, 0x08, 0x01,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    ]
-    lut_bw1 = [
-        0xA8, 0x10, 0x10, 0x01, 0x08, 0x01,
-        0x84, 0x06, 0x01, 0x06, 0x01, 0x05,
-        0x84, 0x08, 0x01, 0x08, 0x01, 0x06,
-        0x86, 0x06, 0x01, 0x06, 0x01, 0x05,
-        0x8C, 0x05, 0x01, 0x1E, 0x0F, 0x06,
-        0x8C, 0x05, 0x01, 0x1E, 0x0F, 0x01,
-        0xF0, 0x04, 0x05, 0x08, 0x08, 0x01,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    ]
-    lut_wb1 = [
-        0x91, 0x10, 0x10, 0x01, 0x08, 0x01,
-        0x04, 0x06, 0x01, 0x06, 0x01, 0x05,
-        0x84, 0x08, 0x01, 0x08, 0x01, 0x06,
-        0x80, 0x06, 0x01, 0x06, 0x01, 0x05,
-        0x00, 0x05, 0x01, 0x1E, 0x0F, 0x06,
-        0x00, 0x05, 0x01, 0x1E, 0x0F, 0x01,
-        0x08, 0x04, 0x05, 0x08, 0x08, 0x01,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    ]
-    lut_bb1 = [
-        0x92, 0x10, 0x10, 0x01, 0x08, 0x01,
-        0x80, 0x06, 0x01, 0x06, 0x01, 0x05,
-        0x84, 0x08, 0x01, 0x08, 0x01, 0x06,
-        0x04, 0x06, 0x01, 0x06, 0x01, 0x05,
-        0x00, 0x05, 0x01, 0x1E, 0x0F, 0x06,
-        0x00, 0x05, 0x01, 0x1E, 0x0F, 0x01,
-        0x01, 0x04, 0x05, 0x08, 0x08, 0x01,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    ]
-
-    def SetLut(self):
-        self.M1S1M2S2_SendCommand(0x20)  # vcom
-        for count in range(0, 60):
-            self.M1S1M2S2_SendData(self.lut_vcom1[count])
-
-        self.M1S1M2S2_SendCommand(0x21)  # red not use
-        for count in range(0, 60):
-            self.M1S1M2S2_SendData(self.lut_ww1[count])
-
-        self.M1S1M2S2_SendCommand(0x22)  # bw r
-        for count in range(0, 60):
-            self.M1S1M2S2_SendData(self.lut_bw1[count])  # bw=r
-
-        self.M1S1M2S2_SendCommand(0x23)  # wb w
-        for count in range(0, 60):
-            self.M1S1M2S2_SendData(self.lut_wb1[count])  # wb=w
-
-        self.M1S1M2S2_SendCommand(0x24)  # bb b
-        for count in range(0, 60):
-            self.M1S1M2S2_SendData(self.lut_bb1[count])  # bb=b
-
-        self.M1S1M2S2_SendCommand(0x25)  # bb b
-        for count in range(0, 60):
-            self.M1S1M2S2_SendData(self.lut_ww1[count])  # bb=b
 
     def M1_ReadTemperature(self):
         self.M1_SendCommand(0x40)
@@ -508,12 +395,11 @@ class EPD(object):
         epdconfig.digital_write(self.EPD_S2_CS_PIN, 1)
 
         epdconfig.digital_write(self.EPD_M1S1_DC_PIN, 1)
-        time.sleep(0.05)
+        time.sleep(0.01)
 
-        temp = epdconfig.spi_readbyte(0x00)
+        # temp = epdconfig.spi_readbyte(0x00)
+        temp = 25
+        print("Read Temperature Reg:%d" % temp)
         epdconfig.digital_write(self.EPD_M1_CS_PIN, 1)
-
-        self.M1S1M2S2_SendCommand(0xE0)
-        self.M1S1M2S2_SendData(0x03)
-        self.M1S1M2S2_SendCommand(0xE5)
-        self.M1S1M2S2_SendData(temp)
+        # temp =0x29
+        return temp

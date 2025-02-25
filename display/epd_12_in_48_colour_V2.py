@@ -29,12 +29,10 @@ THE SOFTWARE.
 
 import time
 
-from display.epdconfig import RaspberryPi as epdconfig
-
+from display import epdconfig_12_in_48 as epdconfig
 
 EPD_WIDTH = 1304
 EPD_HEIGHT = 984
-BUSY_TIMEOUT_MS = 200
 
 
 class EPD(object):
@@ -376,59 +374,42 @@ class EPD(object):
         self.M1_SendCommand(0x71)
         busy = epdconfig.digital_read(self.EPD_M1_BUSY_PIN)
         busy = not (busy & 0x01)
-        iter = 0
-        while(busy):
-            iter += 1
-            self.M1_SendCommand(0x71) 
-            busy = epdconfig.digital_read(self.EPD_M1_BUSY_PIN) 
-            busy = not(busy & 0x01) 
-            if iter > BUSY_TIMEOUT_MS:
-                print("Forced m1 e-paper busy release")
-                break
+        while (busy):
+            self.M1_SendCommand(0x71)
+            busy = epdconfig.digital_read(self.EPD_M1_BUSY_PIN)
+            busy = not (busy & 0x01)
         time.sleep(0.2)
+
     def M2_ReadBusy(self):
         self.M2_SendCommand(0x71)
         busy = epdconfig.digital_read(self.EPD_M2_BUSY_PIN)
         busy = not (busy & 0x01)
         self.M2_SendCommand(0x71)
-        iter = 0
-        while(busy):
-            iter += 1
+        while (busy):
             self.M2_SendCommand(0x71)
             busy = epdconfig.digital_read(self.EPD_M2_BUSY_PIN)
-            busy =not(busy & 0x01)
-            if iter > BUSY_TIMEOUT_MS:
-                print("Forced m2 e-paper busy release")
-                break
+            busy = not (busy & 0x01)
         time.sleep(0.2)
+
     def S1_ReadBusy(self):
         self.S1_SendCommand(0x71)
         busy = epdconfig.digital_read(self.EPD_S1_BUSY_PIN)
         busy = not (busy & 0x01)
-        iter = 0
-        while(busy):
-            iter += 1
+        while (busy):
             self.S1_SendCommand(0x71)
             busy = epdconfig.digital_read(self.EPD_S1_BUSY_PIN)
-            busy = not(busy & 0x01)
-            if iter > BUSY_TIMEOUT_MS:
-                print("Forced s1 e-paper busy release")
-                break
+            busy = not (busy & 0x01)
         time.sleep(0.2)
+
     def S2_ReadBusy(self):
         self.S2_SendCommand(0x71)
         busy = epdconfig.digital_read(self.EPD_S2_BUSY_PIN)
         busy = not (busy & 0x01)
-        iter = 0
-        while(busy):
-            iter += 1
+        while (busy):
             self.S2_SendCommand(0x71)
             busy = epdconfig.digital_read(self.EPD_S2_BUSY_PIN)
-            busy = not(busy & 0x01) 
-            if iter > BUSY_TIMEOUT_MS:
-                print("Forced e-paper busy release")
-                break
-        time.sleep(0.2)            
+            busy = not (busy & 0x01)
+        time.sleep(0.2)
 
     lut_vcom1 = [
         0x00, 0x10, 0x10, 0x01, 0x08, 0x01,
