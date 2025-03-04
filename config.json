@@ -4,11 +4,11 @@
   "maxEventsPerDay": 7,
   "isShutdownOnComplete": false,
   "batteryDisplayMode": 0,
-  "is_client": false,
   "screenWidth": 984,
   "screenHeight": 1304,
   "imageWidth": 1304,
   "imageHeight": 984,
+  "alarm_interval_minutes": 5,
   "rotateAngle": 270,
   "is24h": true,
   "calendars": [

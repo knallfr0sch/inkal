@@ -19,3 +19,4 @@ class Config(TypedDict):
     screenHeight: int
     screenWidth: int
     thresholdHours: int
+    alarm_interval_minutes: int

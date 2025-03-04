@@ -3,6 +3,7 @@
 
 import logging
 import socket
+import datetime as dt
 
 pi_sugar_tcp_port = 8423
 
@@ -50,6 +51,25 @@ class PiSugar:
                 sock.recv(1024)
         except socket.error as e:
             self.logger.info(f"Socket error: {e}")
+
+    # def set_alarm(self, alarm_interval_minutes: int) -> None:
+    #     """
+    #     Set alarm
+    #     """
+    #     try:
+    #         next_alarm = dt.datetime.now() + dt.timedelta(minutes=alarm_interval_minutes)
+    #         next_alarm_iso = next_alarm.isoformat()
+
+    #         # Set the RTC wakeup alarm (this is a placeholder, replace with actual RTC setting code)
+    #         print(f"Setting RTC alarm for {next_alarm_iso}")
+            
+    #         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+    #             sock.connect(("127.0.0.1", pi_sugar_tcp_port))
+    #             command = f"rtc_alarm_set {next_alarm_iso} 127"
+    #             sock.sendall(f"rtc_alarm_set {next_alarm_iso} 127")
+    #             sock.recv(1024)
+    #     except socket.error as e:
+    #         self.logger.info(f"Socket error: {e}")
       
 if __name__ == "__main__":
     print(PiSugar().get_battery())

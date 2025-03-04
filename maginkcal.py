@@ -57,6 +57,9 @@ def main():
     isShutdownOnComplete = config[
         "isShutdownOnComplete"
     ]  # set to true to conserve power, false if in debugging mode
+    alarm_interval_minutes = config[
+        alarm_interval_minutes
+        ]
     screenWidth = config[
         "screenWidth"
     ]  # Width of E-Ink display. Default is landscape. Need to rotate image to fit.
@@ -75,9 +78,6 @@ def main():
     # calendars: List[str] = config["calendars"]  # Google calendar ids
     accounts: List[Any] = config["accounts"]  # Google accounts to authenticate
 
-    is_client = config["is_client"]
-    is_server = not is_client
-
     # Create and configure logger
     logging.basicConfig(
         filename="logfile.log",
@@ -90,104 +90,100 @@ def main():
     logger.info("Starting daily calendar update")
 
     try:
-        if (is_client):
-            sync_time(logger, displayTZ)
+        sync_time(logger, displayTZ)
 
     except Exception as e:
         logger.error(e)
 
-    if is_server:
-        try:
-            currDatetime = dt.datetime.now(displayTZ)
+    try:
+        currDatetime = dt.datetime.now(displayTZ)
 
-            currDate = currDatetime.date()
-            calStartDate = currDate - dt.timedelta(
-                days=(currDate.weekday() % 7)
+        currDate = currDatetime.date()
+        calStartDate = currDate - dt.timedelta(
+            days=(currDate.weekday() % 7)
+        )
+        calEndDate = calStartDate + dt.timedelta(days=(4 * 7 - 1))
+        calStartDatetime = displayTZ.localize(
+            dt.datetime.combine(calStartDate, dt.datetime.min.time())
+        )
+        calEndDatetime = displayTZ.localize(
+            dt.datetime.combine(calEndDate, dt.datetime.max.time())
+        )
+
+        start: dt.datetime = dt.datetime.now()
+
+        tasks: List[InkalTask] = []
+        events: List[InkalEvent] = []
+        for account in accounts:
+            calendars: List[Calendar] = config["accounts"][account]["calendars"]
+            google_auth = GoogleAuth()
+            calendar_service, task_service = google_auth.authenticate(account)
+            google_calendar = GoogleCalendar(calendar_service)
+            google_tasks = GoogleTasks(task_service)
+
+            account_tasks: List[InkalTask] = google_tasks.retrieve_tasks(
+                calStartDatetime - dt.timedelta(weeks=3),
+                calEndDatetime,
+                displayTZ,
+                thresholdHours,
             )
-            calEndDate = calStartDate + dt.timedelta(days=(4 * 7 - 1))
-            calStartDatetime = displayTZ.localize(
-                dt.datetime.combine(calStartDate, dt.datetime.min.time())
+
+            account_events: List[Event] = google_calendar.retrieve_events(
+                calendars=calendars,
+                startDatetime=calStartDatetime,
+                endDatetime=calEndDatetime,
+                localTZ=displayTZ,
+                thresholdHours=thresholdHours,
             )
-            calEndDatetime = displayTZ.localize(
-                dt.datetime.combine(calEndDate, dt.datetime.max.time())
-            )
+            logger.info("Calendar events retrieved in " + str(dt.datetime.now() - start))
 
-            start: dt.datetime = dt.datetime.now()
+            tasks.extend(account_tasks)
+            events.extend(account_events)
 
-            tasks: List[InkalTask] = []
-            events: List[InkalEvent] = []
-            for account in accounts:
-                calendars: List[Calendar] = config["accounts"][account]["calendars"]
-                google_auth = GoogleAuth()
-                calendar_service, task_service = google_auth.authenticate(account)
-                google_calendar = GoogleCalendar(calendar_service)
-                google_tasks = GoogleTasks(task_service)
+        render_data: DisplayData = {
+            "calStartDate": calStartDate,
+            "events": events,
+            "lastRefresh": currDatetime,
+            "maxEventsPerDay": maxEventsPerDay,
+            "today": currDate,
+            "tasks": tasks
+        } 
 
-                account_tasks: List[InkalTask] = google_tasks.retrieve_tasks(
-                    calStartDatetime - dt.timedelta(weeks=3),
-                    calEndDatetime,
-                    displayTZ,
-                    thresholdHours,
-                )
+        renderer = ChromeRenderer(imageWidth, imageHeight, rotateAngle)
+        black_image, red_image = renderer.render(render_data)
+    except Exception as e:
+        logger.error(e)
 
-                account_events: List[Event] = google_calendar.retrieve_events(
-                    calendars=calendars,
-                    startDatetime=calStartDatetime,
-                    endDatetime=calEndDatetime,
-                    localTZ=displayTZ,
-                    thresholdHours=thresholdHours,
-                )
-                logger.info("Calendar events retrieved in " + str(dt.datetime.now() - start))
+    copy_image()
 
-                tasks.extend(account_tasks)
-                events.extend(account_events)
+    from display.display import EInkDisplay
 
-            render_data: DisplayData = {
-                "calStartDate": calStartDate,
-                "events": events,
-                "lastRefresh": currDatetime,
-                "maxEventsPerDay": maxEventsPerDay,
-                "today": currDate,
-                "tasks": tasks
-            } 
+    eInkDisplay = EInkDisplay(screenWidth, screenHeight)
 
-            renderer = ChromeRenderer(imageWidth, imageHeight, rotateAngle)
-            black_image, red_image = renderer.render(render_data)
-        except Exception as e:
-            logger.error(e)
+    red_image_path = os.path.join(image_dir, 'red_image.png')
+    black_image_path = os.path.join(image_dir, 'black_image.png')
+    red_image = Image.open(red_image_path)
+    black_image = Image.open(black_image_path)
+    # if currDate.weekday() == 0:
+    #     # calibrate display once a week to prevent ghosting
+    #     eInkDisplay.calibrate(cycles=0)  # to calibrate in production
+    eInkDisplay.display(black_image, red_image)
+    # eInkDisplay.sleep()
 
-    if is_client:
-        copy_image()
-
-        from display.display import EInkDisplay
-
-        eInkDisplay = EInkDisplay(screenWidth, screenHeight)
-
-        red_image_path = os.path.join(image_dir, 'red_image.png')
-        black_image_path = os.path.join(image_dir, 'black_image.png')
-        red_image = Image.open(red_image_path)
-        black_image = Image.open(black_image_path)
-        # if currDate.weekday() == 0:
-        #     # calibrate display once a week to prevent ghosting
-        #     eInkDisplay.calibrate(cycles=0)  # to calibrate in production
-        eInkDisplay.display(black_image, red_image)
-        # eInkDisplay.sleep()
-
-        pi_sugar = PiSugar()
-        battery_level = pi_sugar.get_battery()
-        logger.info("Battery level at end: {:.3f}".format(battery_level))
+    pi_sugar = PiSugar()
+    battery_level = pi_sugar.get_battery()
+    logger.info("Battery level at end: {:.3f}".format(battery_level))
 
 
     logger.info("Completed daily calendar update")
     
-    if is_client:
-        logger.info(
-            "Checking if configured to shutdown safely - Current hour: {}".format(
-                dt.datetime.now(displayTZ).hour
-            )
+    logger.info(
+        "Checking if configured to shutdown safely - Current hour: {}".format(
+            dt.datetime.now(displayTZ).hour
         )
-        logger.info("Shutting down safely.")
-        os.system("sudo shutdown -h now")
+    )
+    logger.info("Shutting down safely.")
+    os.system("sudo shutdown -h now")
 
 def copy_image():
     black_image_path = os.path.join(image_dir, 'black_image.png')
