@@ -89,11 +89,14 @@ def main():
     logger.setLevel(logging.INFO)
     logger.info("Starting daily calendar update")
 
-    try:
-        sync_time(logger, displayTZ)
+    # try:
+    #     sync_time(logger, displayTZ)
 
-    except Exception as e:
-        logger.error(e)
+    # except Exception as e:
+    #     logger.error(e)
+
+    logger.info(msg="Time synchronised")
+
 
     try:
         currDatetime = dt.datetime.now(displayTZ)
@@ -135,7 +138,7 @@ def main():
                 localTZ=displayTZ,
                 thresholdHours=thresholdHours,
             )
-            logger.info("Calendar events retrieved in " + str(dt.datetime.now() - start))
+            logger.info(msg="Calendar events retrieved in " + str(dt.datetime.now() - start))
 
             tasks.extend(account_tasks)
             events.extend(account_events)
@@ -154,7 +157,7 @@ def main():
     except Exception as e:
         logger.error(e)
 
-    copy_image()
+    logger.info(msg="Data rendered in " + str(dt.datetime.now() - start))
 
     from display.display import EInkDisplay
 
@@ -185,11 +188,6 @@ def main():
     logger.info("Shutting down safely.")
     os.system("sudo shutdown -h now")
 
-def copy_image():
-    black_image_path = os.path.join(image_dir, 'black_image.png')
-    red_image_path = os.path.join(image_dir, 'red_image.png')
-    os.system(f"scp raspberrypizero:{black_image_path} {black_image_path}")
-    os.system(f"scp raspberrypizero:{red_image_path} {red_image_path}")
 
 def sync_time(logger: logging.Logger, displayTZ: DstTzInfo) -> None:
     pi_sugar = PiSugar()
