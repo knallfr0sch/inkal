@@ -8,22 +8,20 @@ package-mode = false
 
 
 [tool.poetry.dependencies]
-beautifulsoup4 = "^4.12.2"
-cairosvg = "^2.5.2"
+python = "^3.9"
 google-api-python-client = "^2.149.0"
 google-auth-httplib2 = "^0.2.0"
 google-auth-oauthlib = "^1.2.1"
-gpiozero = "2.0.0"
-htmlgenerator = "^1.2.30"
-lgpio = "^0.2.2.0"
-numpy = "^1.24.0"
-pillow = "^10.4.0"
-pytest = "^8.3.3"
-python = "^3.9"
 pytz = "^2024.2"
+pillow = "^10.4.0"
 rpi-gpio = "^0.7.1"
 spidev = "^3.6"
 typings-google-calendar-api = "^1.0.0"
+pytest = "^8.3.3"
+htmlgenerator = "^1.2.30"
+numpy = "^1.24.0"
+cairosvg = "^2.5.2"
+beautifulsoup4 = "^4.12.2"
 
 
 [build-system]
