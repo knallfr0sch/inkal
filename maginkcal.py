@@ -58,7 +58,7 @@ def main():
         "isShutdownOnComplete"
     ]  # set to true to conserve power, false if in debugging mode
     alarm_interval_minutes = config[
-        alarm_interval_minutes
+        "alarm_interval_minutes"
         ]
     screenWidth = config[
         "screenWidth"
