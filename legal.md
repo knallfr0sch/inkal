@@ -51,7 +51,4 @@ Our services are not intended for individuals under the age of 13, and we do not
 We may update this Privacy Policy from time to time. We’ll notify you of any significant changes by posting the new policy here.
 8. Contact Us
 
-If you have any questions about this Privacy Policy, you can contact us at:
-
-Email: [yourcontact@email.com]
-Website: [yourwebsite.com]
+Contact us at github, for example by opening a GitHub discussion.
