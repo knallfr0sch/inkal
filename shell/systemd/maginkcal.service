@@ -1,0 +1,21 @@
+[Unit]
+Description=Run Magic Ink Calendar every hour
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+pi@raspberrypi:~/inkal $ cat /etc/systemd/system/maginkcal.service 
+[Unit]
+Description=Magic Ink Calendar
+After=network.target
+
+[Service]
+ExecStart=/home/pi/inkal/shell/startup.sh
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
