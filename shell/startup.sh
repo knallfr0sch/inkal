@@ -7,4 +7,4 @@ cd /home/pi/inkal
 sleep 60
 
 # Run the Python script
-poetry run python maginkcal.py
+poetry run python /home/pi/inkal/maginkcal.py
