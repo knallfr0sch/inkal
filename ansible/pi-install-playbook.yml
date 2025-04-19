@@ -272,6 +272,7 @@
             dest: "/etc/systemd/system/maginkcal.service"
             remote_src: true
             mode: '0644'
+            owner: pi
 
         - name: Enable maginkcal systemd service
           ansible.builtin.systemd:
@@ -290,6 +291,7 @@
             dest: "/etc/systemd/system/maginkcal.timer"
             remote_src: true
             mode: '0644'
+            owner: pi
 
         - name: Enable maginkcal systemd timer
           ansible.builtin.systemd:
@@ -316,6 +318,7 @@
             dest: "{{ maginkcal_dir }}/gcal/"
             remote_src: yes
             mode: '0644'
+            owner: pi
           loop: "{{ gcal_token_files.files }}"
 
   handlers:
