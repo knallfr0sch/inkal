@@ -143,3 +143,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+gcal/teamsandner@gmail.com.token.pickle
+gcal/sebastian.sandner89@gmail.com.token.pickle
