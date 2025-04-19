@@ -185,8 +185,8 @@ def main():
             dt.datetime.now(displayTZ).hour
         )
     )
-    logger.info("Shutting down safely.")
-    os.system("sudo shutdown -h now")
+    # logger.info("Shutting down safely.")
+    # os.system("sudo shutdown -h now")
 
 
 def sync_time(logger: logging.Logger, displayTZ: DstTzInfo) -> None:
