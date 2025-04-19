@@ -1,0 +1,9 @@
+[Unit]
+Description=Run Magic Ink Calendar every hour
+
+[Timer]
+OnCalendar=0/1:0 # Shorthand for every hour.
+AccuracySec=1min  #  How close to the hour it should run.
+
+[Install]
+WantedBy=timers.target
