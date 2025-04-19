@@ -1,0 +1,223 @@
+---
+- name: Install and Configure eInk Display on Raspberry Pi
+  hosts: raspberrypi # Replace with your Raspberry Pi inventory hostname or group
+  become: yes # Most tasks require root privileges
+  vars:
+    lg_repo_zip: "https://github.com/joan2937/lg/archive/master.zip"
+    lg_build_dir: "/tmp/lg-build"
+    bcm2835_version: "1.71"
+    bcm2835_tarball: "bcm2835-{{ bcm2835_version }}.tar.gz"
+    bcm2835_url: "http://www.airspayce.com/mikem/bcm2835/{{ bcm2835_tarball }}"
+    bcm2835_build_dir: "/tmp/bcm2835-{{ bcm2835_version }}"
+    wiringpi_repo_url: "https://github.com/WiringPi/WiringPi.git"
+    wiringpi_build_dir: "/tmp/wiringpi-build"
+    wiringpi_deb_name: "wiringpi_3.14_arm64.deb" # As per specific instructions
+    waveshare_code_url: "https://files.waveshare.com/upload/9/9a/12.48inch_e-Paper_Module_Code_RPI.7z"
+    waveshare_code_archive: "/tmp/waveshare_code.7z"
+    waveshare_code_dest_dir: "/opt/waveshare_code/12.48inch_e-Paper_Module_Code" # Install code in /opt
+
+  tasks:
+    - name: Ensure SPI is disabled in /boot/config.txt
+      ansible.builtin.lineinfile:
+        path: /boot/config.txt # Note: Might be /boot/firmware/config.txt on newer OS versions
+        regexp: '^#?dtparam=spi=.*'
+        line: 'dtparam=spi=off' # Changed from 'on' to 'off'
+        state: present
+        backrefs: no # Insert the line if it doesn't exist, otherwise ensure it's uncommented and set correctly
+      notify: Reboot Pi
+
+    # The handler will trigger the reboot if the lineinfile task made changes
+    - name: Flush handlers to ensure reboot happens now if needed
+      ansible.builtin.meta: flush_handlers
+
+    - name: Install prerequisites (git, make, build-essential, p7zip)
+      ansible.builtin.apt:
+        name:
+          - git
+          - make
+          - build-essential # Often needed for compiling C code
+          - p7zip-full
+        state: present
+        update_cache: no
+
+    - name: Ensure lg build directory exists
+      ansible.builtin.file:
+        path: "{{ lg_build_dir }}" # This resolves to /tmp/lg-build
+        state: directory
+        mode: '0755' # Set appropriate permissions
+
+    - name: Download and Unarchive lg library
+      ansible.builtin.unarchive:
+        src: "{{ lg_repo_zip }}"
+        dest: "{{ lg_build_dir }}"
+        remote_src: yes
+        creates: "{{ lg_build_dir }}/lg-master/Makefile" # Idempotency check
+
+    - name: Compile lg library
+      community.general.make:
+        chdir: "{{ lg_build_dir }}/lg-master"
+      # No 'creates' needed here as make should handle "already up-to-date"
+
+    - name: Install lg library
+      community.general.make:
+        chdir: "{{ lg_build_dir }}/lg-master"
+        target: install
+      # Consider adding a check for idempotency, e.g., checking if a file exists in /usr/local/lib
+
+    - name: Clean up lg build directory
+      ansible.builtin.file:
+        path: "{{ lg_build_dir }}"
+        state: absent
+
+    # --- Optional gpiod ---
+    - name: Install gpiod library (optional)
+      ansible.builtin.apt:
+        name:
+          - gpiod
+          - libgpiod-dev
+        state: present
+      tags:
+        - optional
+        - gpiod
+
+    # --- Optional BCM2835 ---
+    - name: Download BCM2835 source (optional)
+      ansible.builtin.get_url:
+        url: "{{ bcm2835_url }}"
+        dest: "/tmp/{{ bcm2835_tarball }}"
+        mode: '0644'
+      tags:
+        - optional
+        - bcm2835
+
+    - name: Unarchive BCM2835 source (optional)
+      ansible.builtin.unarchive:
+        src: "/tmp/{{ bcm2835_tarball }}"
+        dest: "/tmp"
+        remote_src: yes
+        creates: "{{ bcm2835_build_dir }}/configure" # Idempotency check
+      tags:
+        - optional
+        - bcm2835
+
+    - name: Configure, Build, Check and Install BCM2835 (optional)
+      ansible.builtin.shell: |
+        ./configure && make && make check && make install
+      args:
+        chdir: "{{ bcm2835_build_dir }}"
+        creates: /usr/local/lib/libbcm2835.a # Idempotency check (adjust if needed)
+      tags:
+        - optional
+        - bcm2835
+
+    - name: Clean up BCM2835 build files (optional)
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/tmp/{{ bcm2835_tarball }}"
+        - "{{ bcm2835_build_dir }}"
+      tags:
+        - optional
+        - bcm2835
+
+    # --- WiringPi ---
+    - name: Clone WiringPi repository (final official branch)
+      ansible.builtin.git:
+        repo: "{{ wiringpi_repo_url }}"
+        dest: "{{ wiringpi_build_dir }}"
+        version: master # Checkout the specific branch/tag if needed, though cloning master and building might be standard now. Instructions specify this branch.
+        force: yes # Ensure we get the specified version even if dir exists
+      # No creates needed, git module handles cloning/updating
+
+    - name: Build WiringPi debian package
+      ansible.builtin.command:
+        cmd: ./build debian
+        chdir: "{{ wiringpi_build_dir }}"
+        creates: "{{ wiringpi_build_dir }}/debian-template/{{ wiringpi_deb_name }}" # Check if specific deb exists in template dir
+
+    - name: Move WiringPi debian package to build root
+      ansible.builtin.command:
+        cmd: "mv debian-template/{{ wiringpi_deb_name }} ."
+        chdir: "{{ wiringpi_build_dir }}"
+        creates: "{{ wiringpi_build_dir }}/{{ wiringpi_deb_name }}" # Check if it exists in root dir
+        removes: "{{ wiringpi_build_dir }}/debian-template/{{ wiringpi_deb_name }}" # Clean up source location
+
+    - name: Install WiringPi debian package
+      ansible.builtin.apt:
+        deb: "{{ wiringpi_build_dir }}/{{ wiringpi_deb_name }}"
+        state: present
+      # Apt module handles idempotency
+
+    - name: Clean up WiringPi build directory
+      ansible.builtin.file:
+        path: "{{ wiringpi_build_dir }}"
+        state: absent
+
+    # --- Waveshare Test Code ---
+    - name: Download Waveshare example code archive
+      ansible.builtin.get_url:
+        url: "{{ waveshare_code_url }}"
+        dest: "{{ waveshare_code_archive }}"
+        mode: '0644'
+      tags:
+        - test_code
+
+    - name: Extract Waveshare example code
+      ansible.builtin.shell: # Changed from 'command' to 'shell'
+        cmd: "7z x {{ waveshare_code_archive }} -o{{waveshare_code_dest_dir}} -aoa" # Added -aoa to overwrite without prompt
+        creates: "{{ waveshare_code_dest_dir }}" # Idempotency: check if target dir exists
+      tags:
+        - test_code
+
+    - name: Set permissions for Waveshare code directory
+      ansible.builtin.file:
+        path: "{{waveshare_code_dest_dir}}" # Set perms on the parent created by 7z -o
+        state: directory
+        mode: '0777'
+        recurse: yes
+      tags:
+        - test_code
+
+    # Use make module explicitly for clean and build
+    - name: Run 'make clean' for Waveshare C example (shell)
+      ansible.builtin.shell:
+        cmd: make clean
+        chdir: "{{ waveshare_code_dest_dir }}/c"
+      ignore_errors: yes # Clean target might not exist
+      tags:
+        - test_code
+
+    - name: Run 'make' for Waveshare C example (shell)
+      ansible.builtin.shell:
+        cmd: make
+        chdir: "{{ waveshare_code_dest_dir }}/c"
+        creates: "{{ waveshare_code_dest_dir }}/c/epd" # Idempotency: check if the executable exists
+      tags:
+        - test_code
+
+    - name: Clean up downloaded Waveshare archive
+      ansible.builtin.file:
+        path: "{{ waveshare_code_archive }}"
+        state: absent
+      tags:
+        - test_code
+
+    - name: Run Waveshare C example (Commented out by default)
+      ansible.builtin.shell:
+        # Use absolute path for the executable when running with sudo
+        cmd: "sudo {{ waveshare_code_dest_dir }}/c/epd"
+        chdir: "{{ waveshare_code_dest_dir }}/c" # chdir is still useful for relative file access by the program
+      tags:
+        - test_code
+        - run_test
+
+  handlers:
+    - name: Reboot Pi
+      ansible.builtin.reboot:
+        msg: "Rebooting Pi to apply SPI configuration"
+        connect_timeout: 5
+        reboot_timeout: 600
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: uptime
