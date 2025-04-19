@@ -22,6 +22,7 @@ htmlgenerator = "^1.2.30"
 numpy = "^1.24.0"
 cairosvg = "^2.5.2"
 beautifulsoup4 = "^4.12.2"
+gpiozero = "^2.0.1"
 
 
 [build-system]
