@@ -26,6 +26,7 @@
 		"accessibility.signals.lineHasInlineSuggestion": {
 			"sound": "on"
 		},
-		"workbench.statusBar.visible": true
+		"workbench.statusBar.visible": true,
+		"ansible.python.interpreterPath": "/home/knallfrosch/personal/inkal/.venv/bin/python"
 	}
 }

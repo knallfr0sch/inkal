@@ -235,7 +235,7 @@
           dest: "{{ maginkcal_dir }}"
           version: main # Checkout the specific branch/tag if needed, though cloning master and building might be standard now. Instructions specify this branch.
           force: yes # Ensure we get the specified version even if dir exists
-
+          update: yes # Update the repository if it already exists
 
     # Install pipx using apt, as system pip installations are restricted
     - name: Install pipx via apt
