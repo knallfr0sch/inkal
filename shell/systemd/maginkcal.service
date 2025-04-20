@@ -6,7 +6,6 @@ After=network.target
 ExecStart=/home/pi/inkal/shell/startup.sh
 Restart=always
 User=pi
-Environment="PATH=/home/pi/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 [Install]
 WantedBy=multi-user.target
