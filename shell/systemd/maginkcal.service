@@ -1,10 +1,4 @@
 [Unit]
-Description=Run Magic Ink Calendar every hour
-
-[Install]
-WantedBy=timers.target
-
-[Unit]
 Description=Magic Ink Calendar
 After=network.target
 
