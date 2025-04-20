@@ -266,7 +266,7 @@
       block:
 
         # SERVICE
-        - name: Install Inkal systemd service
+        - name: Copy Inkal systemd service
           ansible.builtin.copy:
             src: "{{ maginkcal_dir }}/shell/systemd/maginkcal.service"
             dest: "/etc/systemd/system/maginkcal.service"
@@ -285,7 +285,7 @@
             state: started
 
         # TIMER
-        - name: Install maginkcal systemd timer
+        - name: Copy maginkcal systemd timer
           ansible.builtin.copy:
             src: "{{ maginkcal_dir }}/shell/systemd/maginkcal.timer"
             dest: "/etc/systemd/system/maginkcal.timer"
