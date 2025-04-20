@@ -1,13 +1,9 @@
 [Unit]
 Description=Run Magic Ink Calendar every hour
 
-[Timer]
-OnCalendar=hourly
-Persistent=true
-
 [Install]
 WantedBy=timers.target
-pi@raspberrypi:~/inkal $ cat /etc/systemd/system/maginkcal.service 
+
 [Unit]
 Description=Magic Ink Calendar
 After=network.target
