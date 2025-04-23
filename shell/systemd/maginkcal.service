@@ -4,7 +4,6 @@ After=network.target
 
 [Service]
 ExecStart=/home/pi/inkal/shell/startup.sh
-Restart=always
 User=pi
 
 [Install]
