@@ -79,6 +79,8 @@ def main():
         events = data.get("calendars", [])
         tasks = data.get("tasks", [])
 
+        print(events)
+        print(tasks)
 
         render_data: DisplayData = {
             "calStartDate": calStartDate,

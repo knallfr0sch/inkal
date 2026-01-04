@@ -46,6 +46,9 @@ class ChromeRenderer:
         Writes calendar.png and extracts [black, red] images
         """
 
+        print(data['events'])
+        print(data['tasks'])
+
         # first setup list to represent the 4 weeks in our calendar
         cal_list: List[List[InkalEvent | InkalTask]] = []
         for _ in range(28):
