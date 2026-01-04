@@ -68,9 +68,11 @@ class Converter:
                 inkal_event["isMultiday"] = False
 
             # No updatedDatetime/isUpdated in test-events.json, so set to None/False
-            updated_str = event.get("updated", "")
-            inkal_event["updatedDatetime"] =  dt.datetime.fromisoformat(updated_str.replace("Z", "+00:00"))
+            # updated_str = event.get("updated", "")
+            # inkal_event["updatedDatetime"] =  dt.datetime.fromisoformat(updated_str.replace("Z", "+00:00"))
+            inkal_event["updatedDatetime"] = None
             inkal_event["isUpdated"] = False
+
 
             inkal_events.append(inkal_event)
         return inkal_events
