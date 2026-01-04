@@ -68,7 +68,7 @@ def main():
         start: dt.datetime = dt.datetime.now()
 
         # Fetch events and tasks from HTTP endpoint
-        url = "https://script.google.com/macros/s/AKfycbwt9i6wrFeITD-ebdE_0LX0v4A5PH3IkED2WWWHiSq_2tke-v0PHrZv4InC8xg6IeII/exec"
+        url = "https://script.google.com/macros/s/AKfycbxrWgy9ORGJmD8Mo7nu-iu3RGrq0BnGhIu7VWyvFF7yltVLr3hzTEIJnz7Rymx97Z_L/exec"
         params = {"key": "Klostergasse48"}
         logger.info(f"Fetching events and tasks from {url}")
         response = requests.get(url, params=params)
