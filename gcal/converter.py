@@ -100,7 +100,12 @@ class Converter:
 
             # No updatedDatetime/isUpdated in test-events.json, so set to None/False
             updated_str = task.get("updated", "")
-            inkal_task["updated"] = dt.datetime.fromisoformat(updated_str.replace("Z", "+00:00"))
+            
+            try:
+                inkal_task["updated"] = dt.datetime.fromisoformat(updated_str.replace("Z", "+00:00"))
+            except Exception:
+                pass
+
             inkal_task["isUpdated"] = False
 
             inkal_tasks.append(inkal_task)
