@@ -1,7 +1,7 @@
 from typing import Optional, TypedDict
 import datetime as dt
 
-class InkalTask(TypedDict):
+class InkalTask(TypedDict, total=False):
     """
     Subset of Google Calendar task
     """

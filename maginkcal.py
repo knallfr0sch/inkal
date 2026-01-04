@@ -12,6 +12,7 @@ CSS stylesheets in the "render" folder.
 
 
 import requests
+from gcal.converter import Converter
 from pytz import timezone
 from pytz.tzinfo import DstTzInfo
 from display_data import DisplayData
@@ -68,7 +69,7 @@ def main():
 
         # Fetch events and tasks from HTTP endpoint
         url = "https://script.google.com/macros/s/AKfycbxdEmpN73rq-hAZRyB8GNnwpgbA339C8qdmE53B_27HqSKGc1JHfCbcIay4GPYWk5k/exec"
-        params = {"key": "test"}
+        params = {"key": "Klostergasse48"}
         logger.info(f"Fetching events and tasks from {url}")
         response = requests.get(url, params=params)
         response.raise_for_status()
@@ -78,13 +79,14 @@ def main():
         events = data.get("calendars", [])
         tasks = data.get("tasks", [])
 
+
         render_data: DisplayData = {
             "calStartDate": calStartDate,
-            "events": events,
+            "events": Converter.to_inkal_events(events),
             "lastRefresh": currDatetime,
             "maxEventsPerDay": maxEventsPerDay,
             "today": currDate,
-            "tasks": tasks
+            "tasks": Converter.to_inkal_tasks(tasks)
         }
 
         renderer = ChromeRenderer(imageWidth, imageHeight, rotateAngle)
