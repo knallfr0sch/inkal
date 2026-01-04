@@ -14,6 +14,7 @@ class Converter:
 
     @staticmethod
     def to_inkal_events(events: List[GoogleAppScriptEvent]) -> List[InkalEvent]:
+        print("Converter.to_inkal_events called")
         """
         Convert a list of calendar event dicts (from test-events.json) to InkalEvent objects.
         """
@@ -76,6 +77,7 @@ class Converter:
 
     @staticmethod
     def to_inkal_tasks(tasks: List[GoogleAppScriptTask.GoogleAppScriptTask]) -> List[InkalTask]:
+        print("Converter.to_inkal_tasks called")
         """
         Convert a list of task dicts (from test-events.json) to InkalTask objects.
         """
