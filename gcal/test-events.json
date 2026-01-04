@@ -1,0 +1,112 @@
+{
+    "calendars": [
+        {
+            "calendarName": "test.sandner@gmail.com",
+            "id": "6cojec9nclj36bb56pi36b9k61i66b9ockq32bb6c4qm2e9pc9j62dhhcc@google.com",
+            "title": "Frischkäse für Kita",
+            "start": "2026-01-04T23:00:00.000Z",
+            "end": "2026-01-05T23:00:00.000Z",
+            "description": "",
+            "location": ""
+        },
+        {
+            "calendarName": "test.sandner@gmail.com",
+            "id": "ccrjecj168sj0bb4chhmcb9k6comabb16kpj8b9n6go66o9nclh3ed1jc8@google.com",
+            "title": "TestABC",
+            "start": "2026-01-08T14:00:00.000Z",
+            "end": "2026-01-08T15:00:00.000Z",
+            "description": "",
+            "location": ""
+        },
+        {
+            "calendarName": "test.sandner@gmail.com",
+            "id": "74s34db26gq6cbb560sj4b9k68oj0bb2c8smcb9gc8r38p9l6kr3cdhn70@google.com",
+            "title": "TestABC2",
+            "start": "2026-01-09T18:00:00.000Z",
+            "end": "2026-01-09T22:00:00.000Z",
+            "description": "",
+            "location": ""
+        },
+        {
+            "calendarName": "test.sandner@gmail.com",
+            "id": "6oo30php6kqm4b9jc8qj4b9k70q30b9o6pgjabb56kq68o9mccsm8cj6cg@google.com",
+            "title": "TestABC3",
+            "start": "2026-01-12T23:00:00.000Z",
+            "end": "2026-01-15T23:00:00.000Z",
+            "description": "",
+            "location": ""
+        },
+        {
+            "calendarName": "test.sandner@gmail.com",
+            "id": "c4s36ohn71h30bb660p3eb9kckoj8bb2cgpj0b9i64sjicj6c5hj0d3360@google.com",
+            "title": "TestABC4",
+            "start": "2026-01-17T14:00:00.000Z",
+            "end": "2026-01-17T16:00:00.000Z",
+            "description": "",
+            "location": ""
+        },
+        {
+            "calendarName": "test.sandner@gmail.com",
+            "id": "coqjap1mccqj0b9m6hgj2b9k60qjcbb16ksm6b9k60o30ohh65ij4chl60@google.com",
+            "title": "TestABC5",
+            "start": "2026-01-17T17:00:00.000Z",
+            "end": "2026-01-17T21:00:00.000Z",
+            "description": "",
+            "location": ""
+        },
+        {
+            "calendarName": "test.sandner@gmail.com",
+            "id": "6th3ae1kcgrj2b9m6gom8b9kckpm2bb1chimcb9p6lj3gp9ocgpjge1l6s@google.com",
+            "title": "TestABC6",
+            "start": "2026-01-25T12:00:00.000Z",
+            "end": "2026-01-25T18:00:00.000Z",
+            "description": "",
+            "location": ""
+        },
+        {
+            "calendarName": "Holidays in Germany",
+            "id": "20260106_4r3bobdeqsnirl6lll20djcjsg@google.com",
+            "title": "Epiphany (regional holiday)",
+            "start": "2026-01-05T23:00:00.000Z",
+            "end": "2026-01-06T23:00:00.000Z",
+            "description": "Public holiday in Baden-Württemberg, Bavaria, Saxony-Anhalt",
+            "location": ""
+        },
+        {
+            "calendarName": "teamsandner@gmail.com",
+            "id": "2ik2i4dn1a1siomf3lkt9q5dlb@google.com",
+            "title": "Kita zu (2 Werktage)",
+            "start": "2025-12-31T23:00:00.000Z",
+            "end": "2026-01-06T23:00:00.000Z",
+            "description": "",
+            "location": ""
+        },
+        {
+            "calendarName": "sebastian.sandner89@gmail.com",
+            "id": "EBDFED4D-EDC8-46FF-98D1-88E03C293223",
+            "title": "TestABC9",
+            "start": "2026-01-31T13:00:00.000Z",
+            "end": "2026-02-01T14:00:00.000Z",
+            "description": "",
+            "location": "MyLocation, MyCity"
+        },
+        {
+            "calendarName": "sebastian.sandner89@gmail.com",
+            "id": "uhgn3jd1h5j877loppcrcas0g8@google.com",
+            "title": "TestABC10",
+            "start": "2026-02-02T23:00:00.000Z",
+            "end": "2026-02-03T23:00:00.000Z",
+            "description": "",
+            "location": ""
+        }
+    ],
+    "tasks": [
+        {
+            "listName": "My Tasks",
+            "title": "Test Task",
+            "notes": "",
+            "due": "2026-01-06T00:00:00.000Z",
+            "status": "needsAction"
+        }
+    ]
+}
